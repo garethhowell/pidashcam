@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
 rev = '0.2'
 destDir = '/home/pi/dev/Videos'
-buffSize = 10 # size of in-memory buffer
-extraTime = 10 # extra seconds to save
+buffSize = 30 # size of in-memory buffer: 5 mins
+extraTime = 30 # extra seconds to save: 5 mins
  
-## This Python script uses picamera to maintain an in-memory buffer of 5 mins video
+## Use picamera to maintain an in-memory buffer of buffSize seconds of video
 ## until Button A is pressed.
-## When Button A is pressed, the script saves the buffer plus the next 5 mins into a file.
-## It then goes back to the in-memory buffer.
+## If Button A is pressed, save the buffer plus the next extraTime seconds into a file.
+## Then goes back to the in-memory buffer.
  
-import io
-import random
+import io #to access the GPIO pins
 import os
 from time import time 
 import picamera
 import sys
 from signal import pause
 from datetime import datetime, timedelta
+import keyboard
 
-def motion_detected():
-  return random.randint(0,10) == 0
+def buttonAPressed():
+#  if keyboard.is_pressed('q'):
+#    print('You pressed a key')
+#    return 1
+#  else:
+    return 0
 
 #---------------------------------------------------------
  
@@ -32,37 +36,47 @@ with picamera.PiCamera() as camera:
   camera.hflip = True
   camera.annotate_background = picamera.Color('black')
   stream = picamera.PiCameraCircularIO(camera, seconds=buffSize)
-  camera.start_recording(stream, bitrate = 500000, format='h264')
   j = 0
   try:
+#    x = timedelta(minutes=2)
+#    i = datetime.now()
+#    endTime = i + x
+#    print i
+#    print endTime
     print 'starting...'
-    x = timedelta(minutes=1)
-    i = datetime.now()
-    endTime = i + x
-    while i < endTime:
-      camera.wait_recording(0.2)
+#    while i < endTime:
+    while True:
       i = datetime.now()
       now = i.strftime('%d/%b/%d %H:%M:%S')
-      if motion_detected():
-        print 'motion detected'
-        outFile = i.strftime('%Y%m%d-%H%M%S.h264')
+      print 'recording to buffer...'
+      camera.start_recording(stream, bitrate = 500000, format='h264')
+      while True:
+        camera.wait_recording(0.2)
         i = datetime.now()
-        delta = timedelta(seconds=extraTime)
-        j = i + delta
-	print now
-        print j.strftime('%d/%b/%d %H:%M:%S')
-        while i < j:
-          now = i.strftime('%d/%b/%y-%H:%M:%S')
-          camera.annotate_text = now
-          camera.wait_recording(0.2)
+        now = i.strftime('%d/%b/%d %H:%M:%S')
+        camera.annotate_text = now
+        if buttonAPressed(): #continue recording for extraTime seconds and save the buffer
+          print 'Button A has been pressed'
+          outFile = i.strftime('%Y%m%d-%H%M%S.h264')
           i = datetime.now()
-#        f = str(d) + '/motion' + str(j) + '.h264'
-        f = str(destDir) + '/' + outFile
-        print f
-        stream.copy_to(f)
-        break
+          delta = timedelta(seconds=extraTime)
+          j = i + delta
+	  print now
+          print j.strftime('%d/%b/%d %H:%M:%S')
+          while i < j:
+            now = i.strftime('%d/%b/%y-%H:%M:%S')
+            camera.annotate_text = now
+            camera.wait_recording(0.2)
+            i = datetime.now()
+
+          f = str(destDir) + '/' + outFile
+          print 'saving file... ' + f
+          stream.copy_to(f)
+  except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
+    print "\nKilling Thread..."
+    
   finally:
-	print 'stopping...'
-	camera.stop_recording()
+    print 'stopping...'
+    camera.stop_recording()
 
     
