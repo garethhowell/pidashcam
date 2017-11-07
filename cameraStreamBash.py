@@ -3,32 +3,33 @@ rev = '0.2'
 destDir = '/home/pi/dev/Videos'
 buffSize = 30 # size of in-memory buffer: 5 mins
 extraTime = 30 # extra seconds to save: 5 mins
- 
+
 ## Use picamera to maintain an in-memory buffer of buffSize seconds of video
 ## until Button A is pressed.
 ## If Button A is pressed, save the buffer plus the next extraTime seconds into a file.
 ## Then goes back to the in-memory buffer.
- 
+
 import io #to access the GPIO pins
 import os
-from time import time 
+from time import time
 import picamera
 import sys
 from signal import pause
 from datetime import datetime, timedelta
 import keyboard
+import logging
 
 def buttonAPressed():
-#  if keyboard.is_pressed('q'):
-#    print('You pressed a key')
-#    return 1
-#  else:
+  if keyboard.is_pressed('q'):
+    print('Stopping...')
+    return 1
+  else:
     return 0
 
 #---------------------------------------------------------
- 
+
 ## Start capturing video
- 
+
 with picamera.PiCamera() as camera:
   camera.resolution = (1024, 960)
   camera.framerate = 25
@@ -43,12 +44,12 @@ with picamera.PiCamera() as camera:
 #    endTime = i + x
 #    print i
 #    print endTime
-    print 'starting...'
+    logging.info 'starting cameraRecorder'
 #    while i < endTime:
     while True:
       i = datetime.now()
       now = i.strftime('%d/%b/%d %H:%M:%S')
-      print 'recording to buffer...'
+      logging.info 'recording to buffer...'
       camera.start_recording(stream, bitrate = 500000, format='h264')
       while True:
         camera.wait_recording(0.2)
@@ -56,13 +57,14 @@ with picamera.PiCamera() as camera:
         now = i.strftime('%d/%b/%d %H:%M:%S')
         camera.annotate_text = now
         if buttonAPressed(): #continue recording for extraTime seconds and save the buffer
-          print 'Button A has been pressed'
+          logging.info 'Button A has been pressed'
+          logging.info 'Continue for ' + extraTime ' seconds'
           outFile = i.strftime('%Y%m%d-%H%M%S.h264')
           i = datetime.now()
           delta = timedelta(seconds=extraTime)
           j = i + delta
-	  print now
-          print j.strftime('%d/%b/%d %H:%M:%S')
+	      #print now
+          #print j.strftime('%d/%b/%d %H:%M:%S')
           while i < j:
             now = i.strftime('%d/%b/%y-%H:%M:%S')
             camera.annotate_text = now
@@ -70,13 +72,12 @@ with picamera.PiCamera() as camera:
             i = datetime.now()
 
           f = str(destDir) + '/' + outFile
-          print 'saving file... ' + f
+          logging.info 'saving file... ' + f
           stream.copy_to(f)
+          logging.info 'back to recording to buffer..'
   except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
-    print "\nKilling Thread..."
-    
-  finally:
-    print 'stopping...'
-    camera.stop_recording()
+    logging.warn "\nKilling Thread..."
 
-    
+  finally:
+    logging.warn 'stopping...'
+    camera.stop_recording()
