@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-rev = '0.2'
+rev = '0.3'
 destDir = '/home/pi/dev/Videos'
-buffSize = 30 # size of in-memory buffer: 5 mins
-extraTime = 30 # extra seconds to save: 5 mins
+buffSize = 10 # size of in-memory buffer: 5 mins
+extraTime = 10 # extra seconds to save: 5 mins
 
 ## PiDashCam
 ## Use picamera to maintain an in-memory buffer of buffSize seconds of video
@@ -10,39 +10,37 @@ extraTime = 30 # extra seconds to save: 5 mins
 ## If Button A is pressed, save the buffer plus the next extraTime seconds into a file.
 ## Then goes back to the in-memory buffer.
 
-import io
+import io, os, sys
 import RPi.GPIO as GPIO #to access the GPIO pins
-import os
-from time import time
+from time import time, sleep
 import picamera
-import sys
 from signal import pause
 from datetime import datetime, timedelta
-import keyboard
-import logging
-import logging.handlers
+import keyboard, logging, logging.handlers
+import threading
+import termios, tty
 
-myLogger = logging.getLogger(__name__)
-myLogger.setLevel(logging.DEBUG)
-syslogHandler = logging.handlers.SysLogHandler(address='/dev/log')
-myLogger.addHandler(syslogHandler)
+## Setup
 
-saveRecording = False
-shutdownNow = False
+logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] (%(threadName)-10s) %(message)s',)
+
+
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def buttonAPressed():
-  global saveRecording
-  myLogger.info('Button A has been pressed')
-  saveRecording = True
+#  global flushBuffer
+  logging.info('Button A has been pressed')
+  timerThread = Thread(target=myTimerThread)
+  timerThread.start()
 
 def buttonBPressed():
-  global shutdownNow
-  myLogger.info('Button B has been pressed')
-  shutdownNow = True
+#  global recording
+  logging.info('Button B has been pressed')
+#  recording = False
+  stopRecording.set()
 
 GPIO.add_event_detect(23, GPIO.FALLING, callback=buttonAPressed, bouncetime=300)
 GPIO.add_event_detect(17, GPIO.FALLING, callback=buttonBPressed, bouncetime=300)
@@ -52,66 +50,87 @@ def updateAnnotation(camera):
     now = i.strftime('%d/%b/%d %H:%M:%S')
     camera.annotate_text = now
 
+def getch():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
+
+button_delay = 0.2
+
+def myTimerThread():
+  logging.info('starting timer thread')
+  global extraTime
+#  global flushBuffer
+  logging.info('sleeping for ' + str(extraTime) + ' seconds')
+  sleep(extraTime)
+  logging.info('stopping timer thread')
+#  flushBuffer = True
+  flushBuffer.set()
+
 #---------------------------------------------------------
-
-## Setup
-
 
 ## Start capturing video
 
-
-with picamera.PiCamera() as camera:
-  camera.resolution = (1024, 960)
-  camera.framerate = 25
-  camera.vflip = True
-  camera.hflip = True
-  camera.annotate_background = picamera.Color('black')
-  stream = picamera.PiCameraCircularIO(camera, seconds=buffSize)
-  j = 0
-  try:
-#    x = timedelta(minutes=2)
-#    i = datetime.now()
-#    endTime = i + x
-#    print i
-#    print endTime
-    myLogger.info('starting piDashCam version ' + str(rev))
+if __name__ == '__main__':
+  stopRecording = threading.Event()
+  flushBuffer = threading.Event()
+  with picamera.PiCamera() as camera:
+    camera.resolution = (1024, 960)
+    camera.framerate = 25
+    camera.vflip = True
+    camera.hflip = True
+    camera.annotate_background = picamera.Color('black')
+    stream = picamera.PiCameraCircularIO(camera, seconds=buffSize)
+    j = 0
+    try:
+      logging.info('starting piDashCam version ' + str(rev))
+      stopRecording.clear()
+      flushBuffer.clear()
 #    while i < endTime:
-    while True:
+      while not stopRecording.isSet():
+        i = datetime.now()
+        now = i.strftime('%d %b %d %H:%M:%S')
+        logging.info('started recording to ' + str(buffSize) + ' seconds buffer at ' + now)
+        camera.led = True
+        camera.start_recording(stream, bitrate = 500000, format='h264')
+        while not stopRecording.isSet():
+          camera.wait_recording(0.2)
+          char = ''
+          char = getch()
+          updateAnnotation(camera)
+          if flushBuffer.isSet() or (char == "s") or (char == 'q'):
+            if char == 's':
+              timerThread = threading.Thread(target=myTimerThread)
+              timerThread.start()
+            else:
+              i = datetime.now()
+              f = i.strftime('%Y%m%d-%H%M%S.h264')
+              outFile = str(destDir) + '/' + f
+              logging.info('saving file... ' + outFile)
+              stream.copy_to(outFile)
+              if flushBuffer.isSet():
+                logging.info('switching back to recording to buffer..')
+                flushBuffer.clear()
+              else:
+                flushBuffer.clear()
+                stopRecording.set()
+
+    except KeyboardInterrupt as SystemExit: #when you press ctrl+c
+      logging.warn('KeyboardInterrupt')
       i = datetime.now()
-      now = i.strftime('%d/%b/%d %H:%M:%S')
-      myLogger.info('started recording to ' + str(buffSize) + ' seconds buffer at ' + now)
-      camera.start_recording(stream, bitrate = 500000, format='h264')
-      while True:
-        camera.wait_recording(0.2)
-        updateAnnotation(camera)
-        if saveRecording: #continue recording for extraTime seconds and save the buffer
-          myLogger.info('Continue for ' + str(extraTime) + ' seconds')
-          f = i.strftime('%Y%m%d-%H%M%S.h264')
-          outFile = str(destDir) + '/' + f
+      f = i.strftime('%Y%m%d-%H%M%S.h264')
+      outFile = str(destDir) + '/' + f
+      logging.debug('saving stream to ' + outFile)
+      stream.copy_to(outFile)
+      logging.warn("Killing Thread...")
 
-          i = datetime.now()
-          delta = timedelta(seconds=extraTime)
-          j = i + delta
-	      #print now
-          #print j.strftime('%d/%b/%d %H:%M:%S')
-          while i < j:
-            updateAnnotation(camera)
-            camera.wait_recording(0.2)
-            i = datetime.now()
-
-          myLogger.info('saving file... ' + outFile)
-          stream.copy_to(outFile)
-          myLogger.info('switching back to recording to buffer..')
-  except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
-    myLogger.warn('KeyboardInterrupt')
-    i = datetime.now()
-    f = i.strftime('%Y%m%d-%H%M%S.h264')
-    outFile = str(destDir) + '/' + f
-    myLogger.debug('saving stream to ' + outFile)
-    stream.copy_to(outFile)
-    myLogger.warn("Killing Thread...")
-
-  finally:
-    logging.info('stopping...')
-    camera.stop_recording()
-    camera.close()
+    finally:
+      logging.info('stopping...')
+      camera.led = False
+      camera.stop_recording()
+      camera.close()
