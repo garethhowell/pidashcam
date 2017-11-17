@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-rev = '0.1.36'
+rev = '0.2.0'
 destDir = '/home/pi/dev/Videos'
 fileExt = "h264"
 buffSize = 120 # size of in-memory buffer: secs
