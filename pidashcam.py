@@ -1,17 +1,20 @@
 #!/usr/bin/env python
-rev = '0.4'
+rev = '0.1.36'
 destDir = '/home/pi/dev/Videos'
-buffSize = 10 # size of in-memory buffer: 5 mins
-extraTime = 10 # extra seconds to save: 5 mins
+fileExt = "h264"
+buffSize = 120 # size of in-memory buffer: secs
+extraTime = 30 # extra seconds to save: secs
 button_delay = 0.2
+speedConv = 2.23694 # convert m/s to mph
+cameraRes = {'h': 1280,'v': 960}
+cameraFormat = 'h264'
+
 gpsd = None #setting the global variable
 camera = None
 
+
+
 ## PiDashCam
-## Use picamera to maintain an in-memory buffer of buffSize seconds of video
-## until Button A is pressed.
-## If Button A is pressed, save the buffer plus the next extraTime seconds into a file.
-## Then goes back to the in-memory buffer.
 
 import io, os, sys, picamera, threading, termios, tty
 import RPi.GPIO as GPIO #to access the GPIO pins
@@ -20,6 +23,8 @@ from signal import pause
 from datetime import datetime, timedelta
 import keyboard, logging, logging.handlers
 from gps import *
+
+
 
 ## Setup
 
@@ -32,8 +37,9 @@ GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 def buttonAPressed():
 #  global flushBuffer
     logging.info('Button A has been pressed')
-    timerThread=Thread(target=myTimerThread, args=(flushBuffer, extraTime), daemon=True)
-    timerThread.start()
+    global extraTime
+    t = threading.Timer(extraTime, setFlushBuffer)
+    t.start()
 
 def buttonBPressed():
 #  global recording
@@ -43,15 +49,78 @@ def buttonBPressed():
 GPIO.add_event_detect(23, GPIO.FALLING, callback=buttonAPressed, bouncetime=300)
 GPIO.add_event_detect(17, GPIO.FALLING, callback=buttonBPressed, bouncetime=300)
 
-def updateAnnotation():
-    global gpsd, camera
 
-    i = datetime.now()
-    now = i.strftime('%d/%b/%d %H:%M:%S')
-    lat = gpsd.fix.latitude
-    lon = gpsd.fix.longitude
-    speed = gpsd.fix.speed
-    camera.annotate_text = now + " " + str(lat) + " " + str(lon)
+class CameraThread(threading.Thread):
+
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+        logging.debug("CameraT init")
+        self.running = True
+
+    def run(self):
+        global gpsd, camera, destDir, speedConv, cameraRes, cameraFormat, fileExt
+        logging.debug("cameraT running")
+        camera = picamera.PiCamera()
+        camera.resolution = (cameraRes['h'], cameraRes['v'])
+        camera.vflip = True
+        camera.hflip = True
+        camera.annotate_background = picamera.Color('black')
+        stream = picamera.PiCameraCircularIO(camera, seconds=buffSize)
+        while not shutdown.isSet():
+            while recording.isSet():
+                i = datetime.now()
+                now = i.strftime('%d %b %d %H:%M:%S')
+                logging.debug('started recording to ' + str(buffSize) + ' seconds buffer at ' + now)
+                camera.led = True
+                camera.start_recording(stream, format=cameraFormat)
+                while recording.isSet():
+                    camera.wait_recording(0.2)
+                    i = datetime.now()
+                    now = i.strftime('%d-%b-%d %H:%M:%S')
+                    lat = gpsd.fix.latitude
+                    lon = gpsd.fix.longitude
+                    speed = gpsd.fix.speed * speedConv
+                    track = gpsd.fix.track
+                    camera.annotate_text = now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True"
+                    if flushBuffer.isSet():
+                        logging.debug("flush")
+                        i = datetime.now()
+                        f = i.strftime('%Y%m%d-%H%M%S.' + fileExt)
+                        outFile = str(destDir) + '/' + f
+                        logging.debug('saving file... ' + outFile)
+                        stream.copy_to(outFile)
+                        logging.debug('switching back to recording to buffer..')
+                        flushBuffer.clear()
+            logging.debug("stopped recording")
+            sleep(1)
+        camera.close()
+        logging.debug("stopping camera thread")
+
+## GpsPoller Thread
+
+class GpsPoller(threading.Thread):
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+        logging.debug("GPS thread initialised")
+        global gpsd #bring it in scope
+        gpsd = gps(mode=WATCH_ENABLE) #starting the stream of info
+        self.current_value = None
+        self.running = True #setting the thread running to true
+
+    def run(self):
+        global gpsd
+        logging.debug("GPS thread running")
+        while not shutdown.isSet():
+            gpsd.next() #this will continue to loop and grab EACH set of gpsd info to clear the buffer
+        logging.debug("stopping GPS thread")
+
+## Timer timeout function
+
+def setFlushBuffer():
+  global flushBuffer
+  flushBuffer.set()
 
 def getch():
     ch = ' '
@@ -64,93 +133,38 @@ def getch():
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
     return ch
 
-def saveBuffer():
-    global destDir
-    i = datetime.now()
-    f = i.strftime('%Y%m%d-%H%M%S.h264')
-    outFile = str(destDir) + '/' + f
-    logging.debug('saving file... ' + outFile)
-    stream.copy_to(outFile)
-
-## Timer thread
-
-def myTimerThread(e, t):
-    logging.debug('starting timer thread')
-    logging.debug('sleeping for ' + str(t) + ' seconds')
-    sleep(t)
-    logging.debug('stopping timer thread')
-    e.set()
-
-#os.system('clear') #clear the terminal (optional)
-
-class GpsPoller(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        global gpsd #bring it in scope
-        gpsd = gps(mode=WATCH_ENABLE) #starting the stream of info
-        self.current_value = None
-        self.running = True #setting the thread running to true
-
-    def run(self):
-        global gpsd
-        while gpsp.running:
-            gpsd.next() #this will continue to loop and grab EACH set of gpsd info to clear the buffer
 #---------------------------------------------------------
 
 ## Main thread
 
 if __name__ == '__main__':
-    gpsp = GpsPoller() # create the thread
-    gpsp.start()
-    recording = threading.Event()
+    ## Inter thread events
+
     flushBuffer = threading.Event()
-    with picamera.PiCamera() as camera:
-        camera.resolution = (1024, 960)
-        camera.framerate = 25
-        camera.vflip = True
-        camera.hflip = True
-        camera.annotate_background = picamera.Color('black')
-        stream = picamera.PiCameraCircularIO(camera, seconds=buffSize)
-        try:
-            logging.info('starting piDashCam version ' + str(rev))
-            recording.set()
-            flushBuffer.clear()
-            while recording.isSet():
-                i = datetime.now()
-                now = i.strftime('%d %b %d %H:%M:%S')
-                logging.debug('started recording to ' + str(buffSize) + ' seconds  buffer at ' + now)
-                camera.led = True
-                camera.start_recording(stream, bitrate = 500000, format='h264')
-                while recording.isSet():
-                    camera.wait_recording(0.2)
-                    updateAnnotation()
-                    char = getch()
-                    if char == "s":
-                        logging.debug("save")
-                        flushBuffer.clear()
-                        timerThread=threading.Thread(target=myTimerThread, args=(flushBuffer, extraTime), daemon=True)
-                        timerThread.start()
-                    elif char == "q":
-                        logging.debug("quit")
-                        saveBuffer()
-                        recording.clear()
-                    elif flushBuffer.isSet():
-                        logging.debug("flush")
-                        saveBuffer()
-                        logging.debug('switching back to recording to buffer..')
-                        flushBuffer.clear()
+    recording = threading.Event()
+    shutdown = threading.Event()
 
-        except KeyboardInterrupt as SystemExit: #when you press ctrl+c
-            logging.warn('KeyboardInterrupt')
-            i = datetime.now()
-            f = i.strftime('%Y%m%d-%H%M%S.h264')
-            outFile = str(destDir) + '/' + f
-            logging.debug('saving stream to ' + outFile)
-            stream.copy_to(outFile)
-            logging.warn("Killing Thread...")
-
-        finally:
-            logging.info('stopping...')
-            camera.led = False
-            camera.stop_recording()
-            camera.close()
+    logging.info('piDashCam version ' + str(rev) + " main thread")
+    gpsT = GpsPoller("gpsT") # create the GPS thread
+    gpsT.start()
+    cameraT = CameraThread("cameraT") # ditto the Camera thread
+    cameraT.start()
+    recording.set()
+    flushBuffer.clear()
+    while recording.isSet():
+        char = getch()
+        if char == "s":
+            logging.debug("save")
+            t = threading.Timer(extraTime, setFlushBuffer)
+            t.start()
+        elif char == "q":
+            logging.debug("quit")
+            flushBuffer.set()
+            recording.clear()
+            sleep(1)
+    logging.info("Shutting down, waiting for threads to die")
+    shutdown.set()
+    gpsT.join()
+    logging.debug("GPS thread died")
+    cameraT.join()
+    logging.debug("Camera thread died. Exiting")

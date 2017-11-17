@@ -64,7 +64,7 @@ Timer thread
   set flushBuffer event
 
 Camera thread
-  Do forever
+  Do until shutDown
     If recording flag is set
       Initialise Camera
       While recording flag is set
@@ -74,9 +74,14 @@ Camera thread
           if shutdown is set
             reset recording event
         else
-          update the camera annotation
+          update annotation with current date-time, position and speed
     wait for 1 second
 
+GPS Thread
+    Initialise connection to gpsd
+    Do until shutDown
+        update current GPS info
+        
 Power failure
   Start Timer thread
   set shutdown Event
