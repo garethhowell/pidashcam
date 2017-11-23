@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 rev = '0.2.0'
-destDir = '/home/pi/dev/Videos'
+destDir = '/home/pi/PiDashCam/Videos'
 fileExt = "h264"
-buffSize = 120 # size of in-memory buffer: secs
-extraTime = 30 # extra seconds to save: secs
+buffSize = 10 # size of in-memory buffer: secs
+extraTime = 10 # extra seconds to save: secs
 button_delay = 0.2
 speedConv = 2.23694 # convert m/s to mph
 cameraRes = {'h': 1280,'v': 960}
 cameraFormat = 'h264'
+BUTTON_A = 23
+BUTTON_B = 24
 
 gpsd = None #setting the global variable
 camera = None
@@ -30,24 +32,43 @@ from gps import *
 
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] (%(threadName)-10s) %(message)s',)
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-def buttonAPressed():
-#  global flushBuffer
+def buttonAPressed(channel):
+    """
+    Button A interrupt service routine
+    Flush the in-memory buffer
+    """
+
+    # This test is here because the user *might* have another HAT plugged in or another circuit that produces a
+    # falling-edge signal on another GPIO pin.
+    if channel != BUTTON_A:
+        return
+
     logging.info('Button A has been pressed')
     global extraTime
     t = threading.Timer(extraTime, setFlushBuffer)
     t.start()
 
-def buttonBPressed():
-#  global recording
+def buttonBPressed(channel):
+    """
+    Button B interrupt service routine
+    Pause/resume recording
+    """
+
+    # This test is here because the user *might* have another HAT plugged in or another circuit that produces a
+    # falling-edge signal on another GPIO pin.
+    if channel != BUTTON_B:
+        return
+
     logging.info('Button B has been pressed')
     recording.clear()
 
-GPIO.add_event_detect(23, GPIO.FALLING, callback=buttonAPressed, bouncetime=300)
-GPIO.add_event_detect(17, GPIO.FALLING, callback=buttonBPressed, bouncetime=300)
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(BUTTON_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(BUTTON_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+GPIO.add_event_detect(BUTTON_A, GPIO.FALLING, callback=buttonAPressed, bouncetime=300)
+GPIO.add_event_detect(BUTTON_B, GPIO.FALLING, callback=buttonBPressed, bouncetime=300)
 
 
 class CameraThread(threading.Thread):

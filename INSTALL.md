@@ -129,9 +129,6 @@ sudo hwclock -w
 sudo hwclock -r
 ```
 
-
-
-
 # Install and configure the GPS
 
 I use the gpsd system daemon to connect to the GPS on the Pi's serial port. Out of the box, the Pi uses the built-in serial port as a console, so this does need to be disabled. Proceed as follows (this for the Pi 3 only)
@@ -187,15 +184,48 @@ cgps -s
 # Install PiDashCam
 1. install the python libraries
 ```
-bash$ sudo apt install python python-picamera python-gps python-rpi.gpio
+$ sudo apt install python python-picamera python-gps python-rpi.gpio python-pip
+$ sudo pip install keyboard
 ```
 2. clone the git package from github
 ```
-git clone https://www/github.com/garethhowell/pidashcam
+$ git clone https://www/github.com/garethhowell/pidashcam
 ```
 # Run PiDashCam
 I recommend that you do this "on the bench" to begin with until you are sure everything is working.
 ```
 cd PiDashCam/Code
-sudo python pidashcam.py
+$ sudo python pidashcam.py
 ```
+# Install Resilio Sync
+Resilio Sync is a personal P2P environment that uses the BitTorrent protocol. It's very similar in concept to Dropbox or OneDrive but the files stay totally within your control: there's no cloud element. More details on
+I use resilio sync to move the videos from the Pi to a Mac in the house.
+1. Install the resilio sync package on your PC or Mac using the intructions on (https://www.resilio.com/)
+2. Create a folder on the Mac that will contain the videos and set it up in Resilio Sync to sync.
+3. Install the package on the Pi
+```
+echo "deb http://linux-packages.resilio.com/resilio-sync/deb resilio-sync non-free" | sudo tee /etc/apt/sources.list.d/resilio-sync.list
+wget -qO - https://linux-packages.resilio.com/resilio-sync/key.asc | sudo apt-key add -
+curl -LO https://linux-packages.resilio.com/resilio-sync/key.asc && sudo apt-key add ./key.asc
+sudo dpkg --add-architecture armhf
+sudo apt-get update
+```
+In `/etc/apt/sources.list` change the line as follows:
+```
+deb [arch=armhf] http://linux-packages.resilio.com/resilio-sync/deb resilio-sync non-free
+```
+1. Install the package
+```
+sudo apt-get update
+sudo apt-get install resilio-sync
+```
+2. Enable the package
+```
+sudo systemctl enable resilio-sync
+sudo systemctl start resilio-sync
+```
+You should now be able to open `http://<ip address>:8888` and see the resilio admin interface
+3. Create the sync connection
+- On the PC/Mac, create a sync folder to receive the Videos and use the Resilio client to make it one and of a sync connection.
+- copy the Sync key for the folder
+- In the web browser, create
