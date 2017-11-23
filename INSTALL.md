@@ -184,17 +184,18 @@ cgps -s
 # Install PiDashCam
 1. install the python libraries
 ```
-bash$ sudo apt install python python-picamera python-gps python-rpi.gpio
+$ sudo apt install python python-picamera python-gps python-rpi.gpio python-pip
+$ sudo pip install keyboard
 ```
 2. clone the git package from github
 ```
-git clone https://www/github.com/garethhowell/pidashcam
+$ git clone https://www/github.com/garethhowell/pidashcam
 ```
 # Run PiDashCam
 I recommend that you do this "on the bench" to begin with until you are sure everything is working.
 ```
 cd PiDashCam/Code
-sudo python pidashcam.py
+$ sudo python pidashcam.py
 ```
 # Install Resilio Sync
 Resilio Sync is a personal P2P environment that uses the BitTorrent protocol. It's very similar in concept to Dropbox or OneDrive but the files stay totally within your control: there's no cloud element. More details on
