@@ -1,0 +1,6 @@
+# Defaults file
+
+PIDFILE=/var/run/pidashcam.pid
+XMLCONFIG=/etc/pidashcam/pidashcam/pidashcam.xml
+LOGLEVEL=debug
+VERBOSE=yes
