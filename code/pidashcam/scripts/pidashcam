@@ -219,6 +219,7 @@ class PiDashCam(Daemon):
         """
         Signal handler
         """
+        #TODO: close other threads down before quitting
 
         if signum == signal.SIGTERM:
             sys.exit(0)
@@ -227,7 +228,8 @@ class PiDashCam(Daemon):
         """
         GPIO cleanup
         """
-
+        #TODO: close other threads down before quitting?
+        
         self.log.debug("Cleanup")
         self.log.info("Stopped")
         GPIO.cleanup()
