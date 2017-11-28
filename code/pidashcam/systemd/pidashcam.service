@@ -1,0 +1,10 @@
+[Unit]
+Description=PiDashCam Raspberry Pi dashboard camera
+Documentation=https://www.github.com/garethhowell/pidashcam
+After=multi-user.service
+
+[Service]
+EnvironmentFile=/etc/default/pidashcam
+Restart=no
+ExecStart=/usr/bin/python /home/pi/PiDashCam/code/pidashcam/scripts/pidashcam -lq ${LOGLEVEL}
+qq

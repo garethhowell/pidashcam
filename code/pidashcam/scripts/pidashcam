@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
+"""PiDashCam Raspberry Pi dashcam
+
+A systemd compliant multi-threaded daemon to record video and respond to button presses
+
 """
 
-PiDashCam Raspberry Pi dashcam
-
-"""
-
-rev = '0.2.1'
+rev = '0.0.1dev2'
 destDir = '/home/pi/PiDashCam/Videos'
 fileExt = "h264"
 buffSize = 10 # size of in-memory buffer: secs
@@ -19,16 +19,6 @@ BUTTON_A = 23
 BUTTON_B = 24
 BOUNCE_TIME = 300
 LED_1 = 16
-LED_1_LED = None
-LED_2 = 20
-LED_2_LED = None
-
-gpsd = None #setting the global variable
-camera = None
-
-
-
-## PiDashCam
 
 import io, os, sys, picamera, threading, termios, tty
 import atexit, socket
@@ -44,115 +34,111 @@ import logging.handlers
 import xmltodict
 import signal
 
-from pimodules.daemon import Daemon # resuse PiModules' Daemon class
-
 # Inter-thread communication events
 flushBuffer = threading.Event()
 recording = threading.Event()
 shutdown = threading.Event()
 
-# Thread objects
-#cameraT = None
-gpsT = None
+#global variables
+gpsd = None
+recordingLED = None
 
 
 class CameraThread(threading.Thread):
+    """CameraThread
 
-    def __init__(self, name, log):
-        global buffSize, cameraRes
+    The thread that manages the PiCamera
+    """
+
+    def __init__(self, name):
         threading.Thread.__init__(self)
         self.name = name
-        self.log = log
-        self.log.debug("CameraT init")
+        self.log = logging.getLogger(__name__)
+        self.log.debug("CameraThread.__init__()")
         self.running = True
-
+        self.camera = picamera.PiCamera()
 
     def run(self):
-        global gpsd, destDir, speedConv, cameraFormat, fileExt, flushbuffer, buffSize, recording, shutdown, LED_1, LED_1_LED, LED_2, LED_2_LED
-        self.log.debug("cameraT running")
+        global gpsd, destDir, speedConv, cameraFormat, fileExt, flushbuffer, buffSize, recording, shutdown
+        global recordingLED
+        self.log.debug("CameraThread.run()")
 
-        camera = picamera.PiCamera()
-        camera.resolution = (cameraRes['h'], cameraRes['v'])
-        camera.vflip = True
-        camera.hflip = True
-        camera.annotate_background = picamera.Color('black')
-        stream = picamera.PiCameraCircularIO(camera, seconds=buffSize)
+        self.camera.resolution = (cameraRes['h'], cameraRes['v'])
+        self.camera.vflip = True
+        self.camera.hflip = True
+        self.camera.annotate_background = picamera.Color('black')
+        stream = picamera.PiCameraCircularIO(self.camera, seconds=buffSize)
 
 
         while not shutdown.isSet():
             while recording.isSet():
-                LED_1_LED.start(50)
+                recordingLED.start(50)
                 i = datetime.now()
                 now = i.strftime('%d %b %d %H:%M:%S')
-                self.log.debug('started recording to ' + str(buffSize) + ' seconds buffer at ' + now)
-                camera.led = True
-                camera.start_recording(stream, format=cameraFormat)
+                self.log.debug('Recording to ' + str(buffSize) + ' seconds buffer at ' + now)
+                self.camera.led = True
+                self.camera.start_recording(stream, format=cameraFormat)
                 while recording.isSet():
-                    camera.wait_recording(0.2)
+                    self.camera.wait_recording(0.2)
                     i = datetime.now()
                     now = i.strftime('%d-%b-%d %H:%M:%S')
                     lat = gpsd.fix.latitude
                     lon = gpsd.fix.longitude
                     speed = gpsd.fix.speed * speedConv
                     track = gpsd.fix.track
-                    camera.annotate_text = now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True"
+                    self.camera.annotate_text = now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True"
                     if flushBuffer.isSet():
-                        self.log.debug("flush")
                         i = datetime.now()
                         f = i.strftime('%Y%m%d-%H%M%S.' + fileExt)
                         outFile = str(destDir) + '/' + f
-                        self.log.debug('saving file... ' + outFile)
+                        self.log.debug('Flushing buffer to ' + outFile)
                         stream.copy_to(outFile)
-                        self.log.debug('switching back to recording to buffer..')
+                        self.log.debug('Switching back to recording to buffer..')
                         flushBuffer.clear()
-                        LED_1_LED.ChangeFrequency(0.5) # extinguish LED_1
+                        recordingLED.ChangeFrequency(0.5) # extinguish LED_1
                     if not recording.isSet():
-                        self.log.debug("stopped recording")
-                        LED_1_LED.stop()
+                        self.log.debug("Recording paused")
+                        recordingLED.stop()
                     if shutdown.isSet():
                         flushBuffer.set()
                         recording.clear()
             sleep(1)
-        camera.close()
-        self.log.debug("stopping camera thread")
+        self.camera.close()
+        self.log.debug("Ending camera thread")
 
 ## GpsPoller Thread
 
 class GpsPoller(threading.Thread):
-    def __init__(self, name,log):
+    def __init__(self, name):
 
         threading.Thread.__init__(self)
         self.name = name
-        self.log = log
-        self.log.debug("GPS thread initialised")
-        global gpsd #bring it in scope
-        gpsd = gps(mode=WATCH_ENABLE) #starting the stream of info
+        self.log = logging.getLogger(__name__)
+        self.log.debug("GPSPoller.__init__()")
+        #bring the gps global variable into scope
+        global gpsd
+        #start updating the GPS info
+        gpsd = gps(mode=WATCH_ENABLE)
         current_value = None
         self.running = True #setting the thread running to true
 
     def run(self):
         global shutdown, gpsd
-        self.log.debug("GPS thread running")
+        self.log.debug("GPSPoller.run()")
         while not shutdown.isSet():
-            gpsd.next() #this will continue to loop and grab EACH set of gpsd info to clear the buffer
-        self.log.debug("stopping GPS thread")
+            #Continue to loop and grab EACH set of gpsd info to clear the buffer
+            gpsd.next()
+        self.log.debug("Ending GPS thread")
 
 
-class PiDashCam(Daemon):
-    def __init__(self, pidfile, loglevel=logging.NOTSET):
-        Daemon.__init__(self, pidfile)
-        self.loglevel = loglevel
-        self.log = logging.getLogger(__name__)
-        self.log.setLevel(self.loglevel)
-        handler = logging.handlers.SysLogHandler(address = '/dev/log')
-        formatter = logging.Formatter('%(module)s[%(process)s]: <%(levelname)s>: %(message)s')
-        handler.setFormatter(formatter)
-        self.log.addHandler(handler)
+class PiDashCam():
+    def __init__(self):
+        self.log  = logging.getLogger(__name__)
+        self.log.debug("PiDashCam.__init__()")
 
         signal.signal(signal.SIGTERM, self.sigcatch)
 
-    def setup(self):
-        global LED_1, LED_1_LED, LED_2, LED_2_LED
+        global recordingLED
         """
         GPIO initialisation
 
@@ -161,16 +147,13 @@ class PiDashCam(Daemon):
 
 		So it is called in the over-ridden run method.
 		"""
-
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         GPIO.setup(BUTTON_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(BUTTON_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         GPIO.setup(LED_1, GPIO.OUT)
-        LED_1_LED = GPIO.PWM(LED_1, 0.5)
-        GPIO.setup(LED_2, GPIO.OUT)
-        LED_2_LED = GPIO.PWM(LED_2, 0.25)
+        recordingLED = GPIO.PWM(LED_1, 0.5)
 
         GPIO.add_event_detect(BUTTON_A, GPIO.FALLING, callback=self.buttonAPressed, bouncetime=BOUNCE_TIME)
         GPIO.add_event_detect(BUTTON_B, GPIO.FALLING, callback=self.buttonBPressed, bouncetime=BOUNCE_TIME)
@@ -187,10 +170,11 @@ class PiDashCam(Daemon):
             return
 
         self.log.debug('Button A has been pressed')
-        global extraTime, LED_1_LED
+        global extraTime
+        global recordingLED
         t = threading.Timer(extraTime, self.setFlushBuffer)
         t.start()
-        LED_1_LED.ChangeFrequency(1)
+        recordingLED.ChangeFrequency(1)
 
 
     def buttonBPressed(self, channel):
@@ -204,15 +188,16 @@ class PiDashCam(Daemon):
         if channel != BUTTON_B:
             return
 
-        global flushBuffer, recording, LED_2_LED
+        global flushBuffer, recording
+        global recordingLED
         self.log.debug('Button B has been pressed')
         if recording.isSet():
             flushBuffer.set()
             recording.clear()
-            LED_1_LED.stop()
+            recordingLED.stop()
         else:
             recording.set()
-            LED_1_LED.ChangeFrequency(0.5)
+            recordingLED.ChangeFrequency(0.5)
 
 
     def sigcatch(self, signum, frame):
@@ -229,7 +214,7 @@ class PiDashCam(Daemon):
         GPIO cleanup
         """
         #TODO: close other threads down before quitting?
-        
+
         self.log.debug("Cleanup")
         self.log.info("Stopped")
         GPIO.cleanup()
@@ -256,36 +241,34 @@ class PiDashCam(Daemon):
         Super-class overloaded run method.
         """
 
-        global recording, flushBuffer, shutdown, gpsT, cameraT, extraTime, LED_1_LED, LED_2_LED
-        self.log.info("Started")
+        global recording, flushBuffer, shutdown, gpsT, cameraT, extraTime
+        global recordingLED
+        self.log.debug("PiDashCam.run()")
 
         # register function to cleanup at exit
         atexit.register(self.cleanup)
 
-        self.setup()
-
-        self.log.info('piDashCam version ' + str(rev) + " main thread")
-        gpsT = GpsPoller("gpsT", self.log) # create the GPS thread
+        gpsT = GpsPoller("gpsT") # create the GPS thread
         gpsT.start()
-        cameraT = CameraThread("cameraT",self.log) # ditto the Camera thread
+        cameraT = CameraThread("cameraT") # ditto the Camera thread
         cameraT.start()
         recording.set()
         flushBuffer.clear()
         shutdown.clear()
-        LED_1_LED.stop()
-        LED_2_LED.stop()
 
         while not shutdown.isSet():
-            char = self.getch()
-            if char == "s":
-                self.log.debug("save")
-                t = threading.Timer(extraTime, self.setFlushBuffer)
-                t.start()
-            elif char == "q":
-                self.log.debug("Shutdown")
-                shutdown.set()
-            sleep(1)
-        self.log.info("Shutting down, waiting for threads to die")
+            if sys.stdin.isatty():
+                char = self.getch()
+                if char == "s":
+                    self.log.debug("save")
+                    t = threading.Timer(extraTime, self.setFlushBuffer)
+                    t.start()
+                elif char == "q":
+                    self.log.debug("Shutdown")
+                    shutdown.set()
+                    sleep(1)
+            
+        self.log.debug("Shutting down, waiting for threads to die")
         shutdown.set()
         gpsT.join()
         self.log.debug("GPS thread died")
@@ -293,15 +276,28 @@ class PiDashCam(Daemon):
         self.log.debug("Camera thread died.")
         self.log.info("Exiting")
 
+class OneLineExceptionFormatter(logging.Formatter):
+    def formatException(self, exc_info):
+        result = super().formatException(exc_info)
+        return repr(result)
+
+    def format(self, record):
+        result = super().format(record)
+        if record.exc_text:
+            result = result.replace("n", "")
+        return result
+
 # parse the command-line
 parser = argparse.ArgumentParser()
 parser.add_argument('-l', '--log-level', help="Log level, 'info' or 'debug'", default='info', choices=['info', 'debug'])
-group = parser.add_mutually_exclusive_group(required=True)
-group.add_argument("-d", "--debug", help="Keep in the foreground, do not daemonize", action="store_true", default=False)
-group.add_argument("-p", "--pid-file", help="PID file")
 args = parser.parse_args()
-
-dashcam = PiDashCam(args.pid_file, {'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
-
-# the argument to the start method is opposite of debug
-dashcam.start(not args.debug)
+#handler = logging.StreamHandler()
+#formatter = OneLineExceptionFormatter(logging.BASIC_FORMAT)
+#handler.setFormatter(formatter)
+logging.basicConfig(level = {'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
+log = logging.getLogger("pidashcam")
+#log.addHandler(handler)
+log.setLevel({'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
+log.info("piDashCam version "  + str(rev) + " started")
+dashcam = PiDashCam()
+dashcam.run()

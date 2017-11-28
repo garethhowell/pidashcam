@@ -22,9 +22,8 @@ doclines = __doc__.split("\n")
 
 
 datafiles=[
-	#	('/etc/pidashcam', ['etc/pidashcam/emailAlertBody.template', 'etc/pimodules/picofssd/emailAlertSubject.template', 'etc/pimodules/picofssd/picofssd.xml']),
 	('/etc/default', ['default/pidashcam']),
-	('/etc/init.d', ['init.d/pidashcam'])
+	('/etc/systemd/services', ['systemd/pidashcam'])
 ]
 
 setup(name='pidashcam',
