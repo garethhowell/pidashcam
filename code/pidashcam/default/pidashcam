@@ -1,3 +1,12 @@
 # Defaults file
 
 LOGLEVEL=debug
+DESTDIR = '/home/pi/PiDashCam/Videos'
+FILE_EXT = "h264"
+PRE_RECORD = 10
+POST_RECORD = 10
+RES = {'h': 1280,'v': 960}
+FORMAT = 'h264'
+BUTTON_A = 23
+BUTTON_B = 24
+LED_1 = 16

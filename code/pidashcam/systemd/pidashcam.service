@@ -1,10 +1,11 @@
 [Unit]
 Description=PiDashCam Raspberry Pi dashboard camera
 Documentation=https://www.github.com/garethhowell/pidashcam
-After=multi-user.service
 
 [Service]
 EnvironmentFile=/etc/default/pidashcam
 Restart=no
-ExecStart=/usr/bin/python /home/pi/PiDashCam/code/pidashcam/scripts/pidashcam -lq ${LOGLEVEL}
-qq
+ExecStart=/usr/bin/python /home/pi/PiDashCam/code/pidashcam/scripts/pidashcam --prerecord ${PRE_RECORD} --postrecord ${POST_RECORD} --resolution ${RES} --ext ${FORMAT} --button_a ${BUTTON_A} --button_b ${BUTTON_B} -led ${LED_1} --log-level ${LOGLEVEL}
+
+[Install]
+WantedBy=multi-user.target
