@@ -27,13 +27,13 @@ datafiles=[
 ]
 
 setup(name='pidashcam',
-      version='0.1dev',
+      version='0.0.1dev3',
       description=doclines[0],
       long_description = "\n".join(doclines[2:]),
       license='GPL3',
       author='Gareth Howell',
       author_email='gareth.howell@gmail.com',
-      url='http://garethhowell.com',
+      url='https://www.github.com/garethhowell/pidashcam',
       platforms=['POSIX'],
       classifiers = filter(None, classifiers.split("\n")),
       scripts=['scripts/pidashcam'],

@@ -70,7 +70,7 @@ only)
 1. edit ``/boot/cmdline.txt`` to remove references to the serial console.
   Remove any references to
 
-    ``console=serial0,115200``, 
+    ``console=serial0,115200``,
 
     ``console=ttyAMA0,115200``,
 
@@ -109,11 +109,6 @@ only)
 Install PiDashCam
 =================
 
-**Important Note:** The pidashcam daemon assumes you have a UPS PIco
-installed because it uses some of the PiModules python library. Even if
-you don’t have a UPS PIco, you must at least install the pimodules
-library (see the UPS PIco installation instructions for details)
-
 1. install the required python libraries::
 
     $ sudo apt install python python-picamera python-gps python-rpi.gpio python-pip
@@ -124,25 +119,45 @@ library (see the UPS PIco installation instructions for details)
     $ git clone https://www/github.com/garethhowell/pidashcam
 3. Install the package::
 
-$ cd PiDashCam/code/pidashcam/scripts
-$ sudo python setup.py install
+     $ cd PiDashCam/code/pidashcam/scripts
+     $ sudo python setup.py install
 
 Run PiDashCam
 =============
 
-I recommend that you do this “on the bench” to begin
+I recommend that you run pidashcam in the foreground to begin
 with until you are sure everything is working.
 
-1. To see the options ``$ sudo /usr/local/sbin/pidashcam -h``
+1. To see the options::
+
+     $ sudo /usr/local/sbin/pidashcam -h
+
+Most options have sensible defaults.
+
 2. To run in the foreground::
 
-       $ sudo /usr/local/sbin/pidashcam -p /var/run/pidashcam -d -l debug
+     $ sudo /usr/local/sbin/pidashcam -l debug
 
-   Log entries go to ``/var/log/syslog``
-3. When you are happy::
+Log entries go to STDOUT
 
-   $ sudo systemctl enable pidashcam
-   $ sudo systemctl start pidashcam
+3. All configuration variables can be set in ``/etc/default/pidashcam``.
+
+   This file is only accessed when ``pidashcam`` is running under ``systemd``
+
+4. When you are happy::
+
+     $ sudo systemctl enable pidashcam
+     $ sudo systemctl start pidashcam
+
+pidashcam will start automatically at boot.
+
+5. You can view log files with::
+
+     $ sudo journalctl -u pidashcam
+
+6. You can stop pidashcam with::
+
+     $ sudo systemctl stop PiDashCam
 
 Install Resilio Sync
 ====================

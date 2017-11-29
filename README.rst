@@ -36,7 +36,7 @@ Functional Overview
 -  On startup, the camera starts recording to an in-memory buffer. The
    video stream is overlaid with current date-time, speed, location and
    direction of travel.
--  LED1 is flashing slowly whenever the camera is recording.
+-  LED1 flashes slowly whenever the camera is recording.
 
 -  If button A is pressed, the current contents of the buffer are
    flushed to a file, together with the following few seconds of video.
@@ -45,21 +45,24 @@ Functional Overview
    faster whilst the buffer is being saved.
 
 -  If button B is pressed, the current contents of the buffer are
-   flushed to a file and the recording is stopped. LED1 is switched off.
+   flushed to a file and recording stopped. LED1 is switched off.
 
 -  If button B is pressed again, recording is re-started from new and
-   LED1 flashes slowly.
+   LED1 flashes slowly again.
 
--  In the background, Resilio Sync is monitoring the folder containing
+-  The UPS PIco ensures that recording can continue even if power has been lost (e.g. in a crash)
+
+Syncing videos files from PiDashCam to some other PC/Mac
+--------------------------------------------------------
+
+-  In the background, Resilio Sync monitors the folder containing
    the h264 format video files. If the Pi is connected to my home Wi-Fi,
    Resilio syncs the contents of the folder to a Mac in the house.
 
 -  If the power if switched off (e.g. ignition is turned off) and the Pi
    is connected to Wi-Fi, the attached UPS keeps the Pi powered for long
-   enough to allow the video files to be synced to my Mac (after
-   checking that the Pi is connected to my home Wi-Fi). It then shuts
-   the Pi down gracefully. LED2 flashes when the Pi is running on UPS
-   power.
+   enough to allow the video files to be synced to my Mac. It then shuts
+   the Pi down gracefully.
 
 -  On the Mac, Hazel is monitoring the sync folder. When it sees h264
    format files appear, it moves them to another non-syncing folder and
