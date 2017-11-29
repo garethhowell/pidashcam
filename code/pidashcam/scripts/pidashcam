@@ -6,7 +6,7 @@ A systemd compliant multi-threaded daemon to record video and respond to button 
 
 """
 
-rev = '0.0.1dev3'
+rev = '0.0.1dev4'
 button_delay = 0.2
 speedConv = 2.23694 # convert m/s to mph
 BOUNCE_TIME = 300
@@ -62,13 +62,15 @@ class CameraThread(threading.Thread):
         self.camera.vflip = True
         self.camera.hflip = True
         self.camera.annotate_background = picamera.Color('black')
-        stream = picamera.PiCameraCircularIO(self.camera, seconds=buffSize)
+        # Create in-memory circular buffer
+        # Needs to be big enough for pre and post record
+        stream = picamera.PiCameraCircularIO(self.camera, seconds=buffSize + extraTime)
 
         # Main Loop
         while not shutdown.isSet():
             while recording.isSet():
                 recordingLED.start(50)
-                self.log.debug('Recording to ' + str(buffSize) + ' seconds buffer')
+                self.log.debug('Recording to ' + str(buffSize + extraTime) + ' seconds buffer')
                 self.camera.start_recording(stream, format=videoFormat)
                 while recording.isSet():
                     self.camera.wait_recording(0.2)
