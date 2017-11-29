@@ -288,17 +288,6 @@ class PiDashCam():
         self.log.debug("Camera thread died.")
         self.log.info("Exiting")
 
-class OneLineExceptionFormatter(logging.Formatter):
-    def formatException(self, exc_info):
-        result = super().formatException(exc_info)
-        return repr(result)
-
-    def format(self, record):
-        result = super().format(record)
-        if record.exc_text:
-            result = result.replace("n", "")
-        return result
-
 # parse the command-line
 parser = argparse.ArgumentParser()
 parser.add_argument('-pre', '--prerecord', help='Pre-recording time (secs)', default='30')
@@ -311,12 +300,10 @@ parser.add_argument('-d', '--destdir', help='Destination directory for videos', 
 parser.add_argument('-v', '--video_format', help="format of video, 'h264' or 'mjpeg'", default='h264', choices=['h264', 'mjpeg'])
 parser.add_argument('-l', '--log-level', help="Log level, 'info' or 'debug'", default='info', choices=['info', 'debug'])
 args = parser.parse_args()
-#handler = logging.StreamHandler()
-#formatter = OneLineExceptionFormatter(logging.BASIC_FORMAT)
-#handler.setFormatter(formatter)
+
+# Initialise logging
 logging.basicConfig(level = {'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
 log = logging.getLogger("pidashcam")
-#log.addHandler(handler)
 log.setLevel({'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
 log.info("piDashCam version "  + str(rev) + " started")
 log.debug(args)
