@@ -6,7 +6,7 @@ A systemd compliant multi-threaded daemon to record video and respond to button 
 
 """
 
-rev = '0.0.1dev4'
+rev = '0.0.1.dev4'
 button_delay = 0.2
 speedConv = 2.23694 # convert m/s to mph
 BOUNCE_TIME = 300
