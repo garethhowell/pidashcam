@@ -1,41 +1,69 @@
 
-"""pidashcam: PiDashCam dashcam daemon
+"""A Raspberry Pi dashboard camera
 
-This script is intended for use with the PiDashCam on a Raspberry Pi computer.
+See https://www.github.com/garethhowell/pidashcam
 """
+# Always prefer setuptools over distutils
+from setuptools import setup, find_packages
+# To use a consistent encoding
+from codecs import open
+from os import path
 
-classifiers = """\
-Development Status :: 5 - Testing/Beta
-Intended Audience :: developers
-License :: GNU General Public License Version 3
-Programming Language :: Python >= 2.7
-Topic :: PiDashCam
-Topic :: PiDashCam dashcam daemon
-Operating System :: Linux (Raspbian)
-"""
+here = path.abspath(path.dirname(__file__))
 
+# Get the long description from the README file
+with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+    long_description = f.read()
 
-from distutils.core import setup
+setup(
+	name='PiDashCam',
 
-doclines = __doc__.split("\n")
+	version ='0.0.1.dev4',
 
+	description = 'A Raspberry Pi dashboard camera'
+	long_description = long_description,
 
+	# The project's homepage
+	url = 'https://www.github.com/garethhowell/pidashcam',
 
-datafiles=[
-	('/etc/default', ['default/pidashcam']),
-	('/etc/systemd/services', ['systemd/pidashcam'])
-]
+	# Author details
+	author = 'Gareth Howell',
+	author_email = 'gareth.howell@gmail.com',
 
-setup(name='pidashcam',
-      version='0.0.1dev3',
-      description=doclines[0],
-      long_description = "\n".join(doclines[2:]),
-      license='GPL3',
-      author='Gareth Howell',
-      author_email='gareth.howell@gmail.com',
-      url='https://www.github.com/garethhowell/pidashcam',
-      platforms=['POSIX'],
-      classifiers = filter(None, classifiers.split("\n")),
-      scripts=['scripts/pidashcam'],
-      data_files = datafiles
-      )
+	# license
+	license = 'GPL3',
+
+	classifiers = [
+		# How mature is this project? Common values are
+    	#   3 - Alpha
+    	#   4 - Beta
+    	#   5 - Production/Stable
+		'Development Status :: 3 - Alpha',
+		'Intended Audience :: Developers',
+		'License :: GNU General Public License Version 3',
+		'Programming Language :: Python :: 2.7',
+		'Topic :: Other',
+		'Operating System :: Linux (Raspbian)'
+	],
+
+	keywords = 'dashcam',
+
+	# You can just specify the packages manually here if your project is
+    # simple. Or you can use find_packages().
+    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+
+	install_requires = '',
+
+	extra_requires = '',
+
+	data_files = [
+		('/etc/default', ['default/pidashcam']),
+		('/etc/systemd/services', ['systemd/pidashcam'])
+	],
+
+	entry_points = {
+		'console_scripts': [
+			'pidashcam=pidashcam:main',
+		],
+	},
+)
