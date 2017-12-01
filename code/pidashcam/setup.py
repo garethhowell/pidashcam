@@ -20,7 +20,7 @@ setup(
 
 	version ='0.0.1.dev4',
 
-	description = 'A Raspberry Pi dashboard camera'
+	description = 'A Raspberry Pi dashboard camera',
 	long_description = long_description,
 
 	# The project's homepage
@@ -39,31 +39,21 @@ setup(
     	#   4 - Beta
     	#   5 - Production/Stable
 		'Development Status :: 3 - Alpha',
-		'Intended Audience :: Developers',
+		'Intended Audience :: Other Audience',
 		'License :: GNU General Public License Version 3',
-		'Programming Language :: Python :: 2.7',
-		'Topic :: Other',
+		'Programming Language :: Python :: 2.7 :: Only',
+		'Topic :: Other/Nonlisted Topic',
 		'Operating System :: Linux (Raspbian)'
 	],
 
-	keywords = 'dashcam',
+	keywords = 'dashcam raspbian python RaspberryPi',
 
 	# You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-	install_requires = '',
-
-	extra_requires = '',
-
 	data_files = [
 		('/etc/default', ['default/pidashcam']),
-		('/etc/systemd/services', ['systemd/pidashcam'])
+		('/etc/systemd/services', ['systemd/pidashcam.service'])
 	],
-
-	entry_points = {
-		'console_scripts': [
-			'pidashcam=pidashcam:main',
-		],
-	},
 )
