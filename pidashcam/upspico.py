@@ -12,7 +12,7 @@ PWR_MODE_REG = 0x00
 LINE_MODE = 0x01
 BAT_MODE = 0x02
 
-class UPSPico(object):
+class UPSPIco(object):
     def __init__(self,address=UPS_ADD, bus=BUS):
         self.log = logging.getLogger(__name__)
         self.log.debug("UPSPico.__init__()")
@@ -31,10 +31,3 @@ class UPSPico(object):
             else:
                 self.log.debug("mode is " + str(mode))
             time.sleep(1)
-
-logging.basicConfig(level = logging.DEBUG)
-log = logging.getLogger("ups_monitor")
-log.setLevel(logging.DEBUG)
-
-ups = UPSPico()
-ups.monitor()

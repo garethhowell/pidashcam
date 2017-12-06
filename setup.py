@@ -9,6 +9,10 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
@@ -18,10 +22,10 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
 	name='PiDashCam',
 
-	version ='0.0.1.dev4',
+	version ='0.0.1.dev5',
 
 	description = 'A Raspberry Pi dashboard camera',
-	long_description = long_description,
+	long_description = readme(),
 
 	# The project's homepage
 	url = 'https://www.github.com/garethhowell/pidashcam',
@@ -56,4 +60,8 @@ setup(
 		('/etc/default', ['default/pidashcam']),
 		('/etc/systemd/services', ['systemd/pidashcam.service'])
 	],
+
+    scripts = [
+        'scripts/pi-dashcam'
+    ]
 )
