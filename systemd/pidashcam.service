@@ -5,7 +5,7 @@ Documentation=https://www.github.com/garethhowell/pidashcam
 [Service]
 EnvironmentFile=/etc/default/pidashcam
 Restart=no
-ExecStart=/usr/local/bin/pi-dashcam --prerecord ${PRE_RECORD} --postrecord ${POST_RECORD} --resolution ${RES} --video_format ${VIDEO_FORMAT} --button_a ${BUTTON_A} --button_b ${BUTTON_B} -led ${LED_1} --log-level ${LOGLEVEL}
+ExecStart=/usr/local/bin/pidashcam --prerecord ${PRE_RECORD} --postrecord ${POST_RECORD} --resolution ${RES} --video_format ${VIDEO_FORMAT} --button_a ${BUTTON_A} --button_b ${BUTTON_B} -led ${LED_1} --log-level ${LOGLEVEL}
 
 [Install]
 WantedBy=multi-user.target

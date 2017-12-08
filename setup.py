@@ -20,9 +20,9 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-	name='PiDashCam',
+	name='pidashcam',
 
-	version ='0.0.1.alpha5',
+	version ='0.0.1.alpha6',
 
 	description = 'A Raspberry Pi dashboard camera',
 	long_description = readme(),
@@ -62,6 +62,6 @@ setup(
 	],
 
     scripts = [
-        'scripts/pi-dashcam'
+        'scripts/pidashcam'
     ]
 )
