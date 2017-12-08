@@ -60,7 +60,9 @@ class PiDashCam():
         self.gpsQueue = MyQueue()
 
         # Internal event used to initiate a controlled shutdown
-        self.shutdown = threading.Event()
+        self.localShutdown = threading.Event()
+        # So UPS can signal immediate Shutdown
+        self.UPSShutdown = threading.Event()
 
         # Setup a callback to catch SIGTERM
         signal.signal(signal.SIGTERM, self.sigcatch)
@@ -136,7 +138,7 @@ class PiDashCam():
             sleep(1)
             self.recording.clear()
             sleep(1)
-            self.shutdown.set()
+            self.localShutdown.set()
             sleep(1)
             sys.exit(0)
 
@@ -177,11 +179,9 @@ class PiDashCam():
             self.videoFormat, self.cameraRes, self.buffSize, self.extraTime,
             self.vflip, self.hflip)
         # ditto UPS thread
-        self.UPST = UPSPIco("UPST", self.destDir, self.recording, self.shutdown)
+        self.UPST = UPSPIco("UPST", self.destDir, self.recording, self.UPSShutdown)
 
         self.recording.set()
-        self.flushBuffer.clear()
-        self.shutdown.clear()
 
         # Start threads
         self.gpsT.start()
@@ -189,7 +189,7 @@ class PiDashCam():
         self.UPST.start()
 
         # Main Loop
-        while not self.shutdown.isSet():
+        while not (self.localShutdown.isSet() or self.UPSShutdown.isSet()) :
             # Only check for keyboard characters if a keyboard is connected!
             # This won't be the case if we are running under systemd
             if sys.stdin.isatty():
@@ -200,12 +200,12 @@ class PiDashCam():
                     t.start()
                 elif char == "q":
                     self.log.debug("Shutdown")
-                    self.shutdown.set()
+                    self.localShutdown.set()
             sleep(1)
 
         # Shutdown
         self.log.debug("Shutting down, waiting for threads to die")
-        self.shutdown.set()
+        self.localShutdown.set()
         self.gpsT.join()
         self.log.debug("GPS thread died")
         self.cameraT.join()

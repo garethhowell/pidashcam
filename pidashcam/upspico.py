@@ -17,7 +17,7 @@ BAT_MODE = 0x02
 RUNTIME = 0x0A
 
 class UPSPIco(threading.Thread):
-    def __init__(self, name, destDir, recording, shutdown,
+    def __init__(self, name, destDir, recording, UPSShutdown,
             address=UPS_ADD, bus=BUS):
         super(UPSPIco, self).__init__()
         self.name = name
@@ -26,7 +26,7 @@ class UPSPIco(threading.Thread):
         self.ups = i2c.I2C(address, bus)
         self.destDir = destDir
         self.recording = recording
-        self.UPSShutdown = shutdown
+        self.UPSShutdown = UPSShutdown
         self.localShutdown = threading.Event()
 
         # Ensure the UPS PIco will stay up long enough
@@ -58,11 +58,11 @@ class UPSPIco(threading.Thread):
             else:
                 self.log.debug("mode is " + str(mode))
             time.sleep(2)
-        if self.UPSShutdown.isSet():
-            self.log.debug("UPS is shutting system down")
-            #os.system("shutdown -P now")
-        elif self.localShutdown.isSet():
+        if self.localShutdown.isSet():
             self.log.debug("Signal is shutting system down")
+        elif self.UPSShutdown.isSet():
+            self.log.debug("UPS is shutting system down")
+            os.system("shutdown -P now")
         else:
             self.log.debug("Not sure why we are shutting system down")
 
