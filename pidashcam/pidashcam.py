@@ -13,7 +13,6 @@ import io, os, sys, threading, termios, tty
 import atexit, socket
 from time import time, sleep
 from signal import pause
-#from datetime import datetime, timedelta
 import keyboard
 #import argparse
 import logging
@@ -21,14 +20,13 @@ import logging
 #import xmltodict
 import signal
 
-from .camerathread import CameraThread
-from .gpspoller import GpsPoller
+from .camerathread import Camera
+from .gpspoller import GPSPoller
 from .upspico import UPSPIco
 from .myqueue import MyQueue
 
 # Specials
 import RPi.GPIO as GPIO
-#import picamera
 
 
 
@@ -36,7 +34,9 @@ class PiDashCam():
     """
     PiDashCam - main thread
     """
-    def __init__(self, destDir, buttonA, buttonB, led1, videoFormat = 'h264', cameraRes = {'h': 1440,'v': 1280}, buffSize = 30, extraTime = 30):
+    def __init__(self, destDir, buttonA, buttonB, led1, videoFormat = 'h264',
+        cameraRes = {'h': 1440,'v': 1280}, buffSize = 30, extraTime = 30,
+        vflip = False, hflip = False):
         self.log  = logging.getLogger(__name__)
         self.log.debug("PiDashCam.__init__()")
 
@@ -45,10 +45,11 @@ class PiDashCam():
         self.buttonA = buttonA
         self.buttonB = buttonB
         self.led1 = led1
-        #self.log.debug("led1 = " + str(self.led1))
         self.cameraRes = cameraRes
         self.buffSize = buffSize
         self.extraTime = extraTime
+        self.vflip = vflip
+        self.hflip = hflip
 
         self.gpsT = None
         self.cameraT = None
@@ -56,8 +57,10 @@ class PiDashCam():
         # Inter-thread communication events
         self.flushBuffer = threading.Event()
         self.recording = threading.Event()
-        self.shutdown = threading.Event()
         self.gpsQueue = MyQueue()
+
+        # Internal event used to initiate a controlled shutdown
+        self.shutdown = threading.Event()
 
         # Setup a callback to catch SIGTERM
         signal.signal(signal.SIGTERM, self.sigcatch)
@@ -104,25 +107,26 @@ class PiDashCam():
 
         # This test is here because the user *might* have another HAT plugged in or another circuit that produces a
         # falling-edge signal on another GPIO pin.
+
         if channel != self.buttonB:
             return
 
-        #global flushBuffer, recording
         self.log.debug('Button B has been pressed')
         if self.recording.isSet():
             self.flushBuffer.set()
             sleep (1)
             self.recording.clear()
             self.recordingLED.stop()
+            self.log.debug('Recording suspended')
         else:
             self.recording.set()
+            self.log.debug('Recording resumed')
             self.recordingLED.ChangeFrequency(0.5)
 
     def sigcatch(self, signum, frame):
         """
         Signal handler
         """
-        #global flushBuffer, recording, shutdown
 
         if signum == signal.SIGTERM:
             # Probably been sent from systemctl stop
@@ -140,14 +144,11 @@ class PiDashCam():
         """
         GPIO cleanup
         """
-        #TODO: close other threads down before quitting?
 
         self.log.debug("Cleanup")
         self.log.info("Stopped")
-        #        GPIO.cleanup()
 
     def setFlushBuffer(self):
-        #global flushBuffer
         self.flushBuffer.set()
 
     def getch(self):
@@ -166,13 +167,17 @@ class PiDashCam():
 
     def run(self):
 
-        #global recording, flushBuffer, shutdown
         self.log.debug("PiDashCam.run()")
 
         # create the GPS thread
-        self.gpsT = GpsPoller("gpsT", self.gpsQueue, self.shutdown)
+        self.gpsT = GPSPoller("gpsT", self.gpsQueue)
         # ditto the Camera thread
-        self.cameraT = CameraThread("cameraT", self.gpsQueue, self.flushBuffer, self.recording, self.shutdown, self.recordingLED, self.destDir, self.videoFormat, self.cameraRes, self.buffSize, self.extraTime)
+        self.cameraT = Camera("cameraT", self.gpsQueue, self.flushBuffer,
+            self.recording, self.recordingLED, self.destDir,
+            self.videoFormat, self.cameraRes, self.buffSize, self.extraTime,
+            self.vflip, self.hflip)
+        # ditto UPS thread
+        self.UPST = UPSPIco("UPST", self.destDir, self.recording, self.shutdown)
 
         self.recording.set()
         self.flushBuffer.clear()
@@ -181,6 +186,7 @@ class PiDashCam():
         # Start threads
         self.gpsT.start()
         self.cameraT.start()
+        self.UPST.start()
 
         # Main Loop
         while not self.shutdown.isSet():
@@ -204,4 +210,6 @@ class PiDashCam():
         self.log.debug("GPS thread died")
         self.cameraT.join()
         self.log.debug("Camera thread died.")
+        self.UPST.join()
+        self.log.debug("UPS thread died.")
         self.log.info("Exiting")

@@ -1,7 +1,7 @@
 # Defaults file
 
 LOGLEVEL=info
-DESTDIR = '/home/pi/PiDashCam/Videos'
+DESTDIR = '/home/pi/Videos'
 PRE_RECORD = 10
 POST_RECORD = 10
 RES = {'h': 1280,'v': 960}

@@ -22,7 +22,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
 	name='PiDashCam',
 
-	version ='0.0.1.dev5',
+	version ='0.0.1.alpha3',
 
 	description = 'A Raspberry Pi dashboard camera',
 	long_description = readme(),
@@ -58,7 +58,7 @@ setup(
 
 	data_files = [
 		('/etc/default', ['default/pidashcam']),
-		('/etc/systemd/services', ['systemd/pidashcam.service'])
+		('/etc/systemd/system', ['systemd/pidashcam.service'])
 	],
 
     scripts = [

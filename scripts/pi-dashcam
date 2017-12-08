@@ -4,13 +4,9 @@ import pidashcam
 import threading
 import logging
 import argparse
+import os
+import rpI2C as i2c
 
-
-
-
-#global variables
-#gpsd = None
-recordingLED = None
 
 # parse the command-line
 parser = argparse.ArgumentParser()
@@ -23,6 +19,8 @@ parser.add_argument('-led', '--led', help='LED GPIO Pin', default='16')
 parser.add_argument('-d', '--destdir', help='Destination directory for videos',  default='/home/pi/Videos')
 parser.add_argument('-v', '--video_format', help="format of video, 'h264' or 'mjpeg'", default='h264', choices=['h264', 'mjpeg'])
 parser.add_argument('-l', '--log-level', help="Log level, 'info' or 'debug'", default='info', choices=['info', 'debug'])
+parser.add_argument('--vflip', help='Flip video vertically', action="store_true")
+parser.add_argument('--hflip', help='Flip video horizontally', action="store_true")
 args = parser.parse_args()
 
 # Initialise logging
@@ -39,6 +37,10 @@ led1 = int(args.led)
 cameraRes = {'h': 1440,'v': 1280}
 buffSize = int(args.prerecord)
 extraTime = int(args.postrecord)
-dashcam = pidashcam.PiDashCam(destDir, buttonA, buttonB, led1, videoFormat,  cameraRes, buffSize, extraTime)
+vflip = args.vflip
+hflip = args.hflip
+
+dashcam = pidashcam.PiDashCam(destDir, buttonA, buttonB, led1, videoFormat,
+    cameraRes, buffSize, extraTime, vflip, hflip)
 log.debug("dashcam = " + str(dashcam))
 dashcam.run()

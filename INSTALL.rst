@@ -119,8 +119,8 @@ Install PiDashCam
     $ git clone https://www/github.com/garethhowell/pidashcam
 3. Install the package::
 
-     $ cd PiDashCam/code/pidashcam/scripts
-     $ sudo python setup.py install
+     $ cd PiDashCam/code/scripts
+     $ sudo pip install .
 
 Run PiDashCam
 =============
@@ -130,23 +130,23 @@ with until you are sure everything is working.
 
 1. To see the options::
 
-     $ sudo /usr/local/sbin/pidashcam -h
+     $ sudo /usr/local/bin/pi-dashcam -h
 
 Most options have sensible defaults.
 
 2. To run in the foreground::
 
-     $ sudo /usr/local/sbin/pidashcam -l debug
+     $ sudo /usr/local/sbin/pidashcam <options>
 
 Log entries go to STDOUT
 
 3. All configuration variables can be set in ``/etc/default/pidashcam``.
 
-   This file is only accessed when ``pidashcam`` is running under ``systemd``
+   This file is only used when ``pidashcam`` is running under ``systemd``
 
 4. When you are happy::
 
-     $ sudo systemctl enable pidashcam
+     $ sudo systemctl enable pidashcam.service
      $ sudo systemctl start pidashcam
 
 pidashcam will start automatically at boot.
@@ -157,7 +157,7 @@ pidashcam will start automatically at boot.
 
 6. You can stop pidashcam with::
 
-     $ sudo systemctl stop PiDashCam
+     $ sudo systemctl stop pidashcam
 
 Install Resilio Sync
 ====================
