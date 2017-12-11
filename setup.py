@@ -22,7 +22,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
 	name='pidashcam',
 
-	version ='0.0.1.alpha6',
+	version ='1.0.a6',
 
 	description = 'A Raspberry Pi dashboard camera',
 	long_description = readme(),
@@ -44,10 +44,9 @@ setup(
     	#   5 - Production/Stable
 		'Development Status :: 3 - Alpha',
 		'Intended Audience :: Other Audience',
-		'License :: GNU General Public License Version 3',
-		'Programming Language :: Python :: 2.7 :: Only',
-		'Topic :: Other/Nonlisted Topic',
-		'Operating System :: Linux (Raspbian)'
+		'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+		'Programming Language :: Python :: 2 :: Only',
+		'Topic :: Other/Nonlisted Topic'
 	],
 
 	keywords = 'dashcam raspbian python RaspberryPi',
