@@ -53,7 +53,8 @@ setup(
 
 	# You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+        ipackages=find_packages(where="src", exclude=['contrib', 'docs', 'tests']),
+        package_dir={"": "src"},
 
 	data_files = [
 		('/etc/default', ['default/pidashcam']),
