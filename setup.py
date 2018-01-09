@@ -22,7 +22,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
 	name='pidashcam',
 
-	version ='1.0.a7',
+	version ='1.0.0.b2',
 
 	description = 'A Raspberry Pi dashboard camera',
 	long_description = readme(),
@@ -42,7 +42,7 @@ setup(
     	#   3 - Alpha
     	#   4 - Beta
     	#   5 - Production/Stable
-		'Development Status :: 3 - Alpha',
+		'Development Status :: 4 - Beta',
 		'Intended Audience :: Other Audience',
 		'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
 		'Programming Language :: Python :: 2 :: Only',

@@ -17,19 +17,18 @@ Hardware
 -   Raspberry Pi (I used a Model B+)
 -   Raspberry Pi Camera Module V2
 -   Adafruit Ultimate GPS breakout board connected using the UART on GPIO
-    14 and 15 (pins 8 and 10)
+    14 and 15
 -   UPS PIco with 450mAh battery from
-    `ModMyPi <https://www.modmypi.com/>`__. PICo uses GPIO x and x (pins
-   x and x)
+    `ModMyPi <https://www.modmypi.com/>`__. PICo uses GPIO 22 and 27
 -   Pi Camera HDMI extender from `Tindie <https://www.tindie.com>`__
 -   Two momentary push buttons
 
-    -   Button A uses GPIO 23 (pin 16)
-    -   Button B uses GPIO 24 (Pin 18)
+    -   Button A uses GPIO 23
+    -   Button B uses GPIO 24
 
 -   One LED
 
-    -   LED1 uses GPIO 16 (pin 36)
+    -   LED1 uses GPIO 16
 
 Functional Overview
 -------------------
@@ -89,7 +88,8 @@ Pseudo Code
 ::
 
     Button A interrupt handler (notable event)
-      Start Timer thread, set flushBuffer flag on timeout
+      Start Timer thread
+      set flushBuffer flag on timeout
 
     Button B interrupt handler (toggle recording)
       If we are recording
@@ -100,32 +100,32 @@ Pseudo Code
       EndIf
 
     Camera thread
-      While shutdown flag is not set
-        While recording flag is set
-            Initialise Camera
-            start recording into buffer
-            While recording flag is set - inner recording loop
-                update annotation with current date-time, position and speed
-                If flushBuffer is set
-                    flush buffer to new file
-                EndIf
-            EndWhile
-        wait for 1 second
-      EndWhile
+        While shutdown flag is not set
+            While recording flag is set
+                Initialise Camera
+                start recording into buffer
+                While recording flag is set - inner recording loop
+                    update annotation with current date-time, position and speed
+                    If flushBuffer is set
+                        flush buffer to new file
+                    EndIf
+                EndWhile
+            wait for 1 second
+        EndWhile
+        Exit
 
     GPS Thread
         Initialise connection to gpsd
         While shutdown flag is not set
             add current GPS fix to inter-thread queue
+        Exit
 
     Power failure
         Start Timer thread
         set shutdown Event on timeout
 
     Main thread
-        reset the flush video flag
-        reset the shutdown flag
-        set the record flag
+        Set the record flag
         Kick off Camera thread
         Kick off GPS thread
 
@@ -134,5 +134,5 @@ Pseudo Code
         While LAN is connected and there are videos in the sync folder
             wait for 1 second
         Kill threads
-        initiate system shutdown
-        exit
+        Initiate system shutdown
+        Exit
