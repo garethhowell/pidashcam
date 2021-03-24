@@ -3,6 +3,10 @@ PiDashCam - Raspberry Pi DashCam
 
 A python package to deliver dashcam functionality using a Raspberry Pi.
 
+IMPORTANT
+---------
+This repository is now READ ONLY and UNSUPPORTED.
+
 Prerequisites
 -------------
 
