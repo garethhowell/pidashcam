@@ -21,9 +21,9 @@ import logging
 #import xmltodict
 import signal
 
-from .camerathread import Camera
+#from .camerathread import Camera
 from .gpspoller import GPSPoller
-from .upspico import UPSPIco
+#from .upspico import UPSPIco
 from .myqueue import MyQueue
 
 # Specials
