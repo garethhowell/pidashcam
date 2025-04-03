@@ -1,6 +1,7 @@
 #! /usr/bin/python -u
 
-import os, threading, time, logging, picamera
+import os, threading, time, logging
+import picamera2 as picamera
 from datetime import datetime, timedelta
 
 import Queue
