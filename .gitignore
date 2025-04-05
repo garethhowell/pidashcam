@@ -1,6 +1,10 @@
 .sync
 .DS_Store
 *.h264
+
+# Development artifacts
+/.python-version
+
 # Compiled python modules.
 *.pyc
 
@@ -8,7 +12,7 @@
 /dist/
 
 # Python egg metadata, regenerated from source files by setuptools.
-/*.egg-info
+*.egg-info/
 
 # Build products
 
