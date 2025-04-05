@@ -2,7 +2,8 @@
 requires = [
 "build",
 "flit_core >=3.11,<4",
-"keyboard"
+"keyboard",
+"opencv-contrib-python"
 ]
 build-backend = "flit_core.buildapi"
 
