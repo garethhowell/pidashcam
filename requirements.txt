@@ -1,2 +1,5 @@
 build
 flit
+imutils
+numpy
+opencv-contrib-python
