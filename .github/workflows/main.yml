@@ -34,5 +34,3 @@ jobs:
 
             -   name: To PyPI using Flit
                 uses: AsifArmanRahman/to-pypi-using-flit@v1
-                #with:
-                    #password: ${{ secrets.PYPI_API_TOKEN }}
