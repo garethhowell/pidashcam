@@ -29,18 +29,18 @@ log = logging.getLogger("pidashcam")
 log.setLevel({'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
 log.info("piDashCam started")
 log.debug(args)
-destDir = args.destdir
-videoFormat = args.video_format
-buttonA = int(args.button_a)
-buttonB = int(args.button_b)
-led1 = int(args.led)
-cameraRes = {'h': 1440,'v': 1280}
-buffSize = int(args.prerecord)
-extraTime = int(args.postrecord)
+dest_dir = args.destdir
+video_format = args.video_format
+button_A = int(args.button_a)
+button_B = int(args.button_b)
+LED_1 = int(args.led)
+camera_res = {'h': 1440,'v': 1280}
+buff_size = int(args.prerecord)
+extra_time = int(args.postrecord)
 vflip = args.vflip
 hflip = args.hflip
 
-dashcam = pidashcam.PiDashCam(destDir, buttonA, buttonB, led1, videoFormat,
-    cameraRes, buffSize, extraTime, vflip, hflip)
+dashcam = pidashcam.PiDashCam(dest_dir, button_A, button_B, LED_1, video_format,
+    camera_res, buff_size, extra_time, vflip, hflip)
 log.debug("dashcam = " + str(dashcam))
 dashcam.run()
