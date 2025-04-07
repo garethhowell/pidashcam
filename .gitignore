@@ -4,6 +4,7 @@
 
 # Development artifacts
 /.python-version
+/.pdm-python
 
 # Compiled python modules.
 *.pyc
