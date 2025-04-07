@@ -2,35 +2,22 @@ name: publish
 
 # Controls when the workflow will run
 on:
-    
-    # Workflow will run when a release has been published for the package
-    release:
-        types:
-            - published
+  release:
+    types: [published]
 
-    # Allows you to run this workflow manually from the Actions tab
-    workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  pypi-publish:
+    name: upload release to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      # This permission is needed for private repositories.
+      contents: read
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
 
-    # This workflow contains a single job called "publish"
-    publish:
+      - uses: pdm-project/setup-pdm@v4
 
-        # The type of runner that the job will run on
-        runs-on: ubuntu-latest
-
-        # Steps represent a sequence of tasks that will be executed as part of the job
-        steps:
-
-            # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-            -   uses: actions/checkout@v3
-
-            -   name: Set up Python 3.9
-                uses: actions/setup-python@v3
-                with:
-                    python-version: 3.9
-                    cache: pip
-
-            -   name: To PyPI using Flit
-                uses: AsifArmanRahman/to-pypi-using-flit@v1
+      - name: Publish package distributions to PyPI
+        run: pdm publish
