@@ -1,8 +1,8 @@
 #! /usr/bin/python
 
-import Queue
+import queue
 
-class MyQueue(Queue.Queue):
+class MyQueue(queue.Queue):
   '''
   A custom queue subclass that provides a :meth: `clear` method.
   '''
