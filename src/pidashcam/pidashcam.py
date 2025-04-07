@@ -21,7 +21,7 @@ import logging
 #import xmltodict
 import signal
 
-#from camerathread import Camera
+from camerathread import Camera
 from gpspoller import GPSPoller
 from myqueue import MyQueue
 
@@ -34,12 +34,13 @@ class PiDashCam():
     """
     PiDashCam - main thread
     """
-    def __init__(self, dest_dir, button_A, button_B, LED_1, video_format = 'h264',
+    def __init__(self, src, dest_dir, button_A, button_B, LED_1, video_format = 'h264',
         camera_res = {'h': 1440,'v': 1280}, buff_size = 30, extra_time = 30,
         vflip = False, hflip = False):
         self._log  = logging.getLogger(__name__)
         self._log.debug("PiDashCam.__init__()")
 
+        self._src = src
         self._dest_dir = dest_dir
         self._video_format = video_format
         self._button_A = button_A
@@ -172,7 +173,7 @@ class PiDashCam():
         # create the GPS thread
         self._GPS_T = GPSPoller("gpsT", self._GPS_queue)
         # ditto the Camera thread
-        self._camera_T = Camera("cameraT", self._GPS_queue, self._flush_buffer,
+        self._camera_T = Camera("cameraT", self._src, self._GPS_queue, self._flush_buffer,
             self._recording, self._recording_LED, self._dest_dir,
             self._video_format, self._camera_res, self._buff_size, self._extra_time,
             self._vflip, self._hflip)

@@ -10,6 +10,8 @@ import rpI2C as i2c
 
 # parse the command-line
 parser = argparse.ArgumentParser()
+parser.add_argument('-s', '--src', help='The video source to capture', default=0)
+parser.add('-d', '--driver', help='the driver to use when access the camera', default='')
 parser.add_argument('-pre', '--prerecord', help='Pre-recording time (secs)', default='30')
 parser.add_argument('-post', '--postrecord', help='Post-recording time (secs)', default='30')
 parser.add_argument('-res', '--resolution', help='video resolution (hxv) in pixels', default='1440x1280')
@@ -29,6 +31,8 @@ log = logging.getLogger("pidashcam")
 log.setLevel({'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
 log.info("piDashCam started")
 log.debug(args)
+src = args.src
+driver = args.driver
 dest_dir = args.destdir
 video_format = args.video_format
 button_A = int(args.button_a)
@@ -40,7 +44,7 @@ extra_time = int(args.postrecord)
 vflip = args.vflip
 hflip = args.hflip
 
-dashcam = pidashcam.PiDashCam(dest_dir, button_A, button_B, LED_1, video_format,
+dashcam = pidashcam.PiDashCam(dest_dir, src, driver, button_A, button_B, LED_1, video_format,
     camera_res, buff_size, extra_time, vflip, hflip)
 log.debug("dashcam = " + str(dashcam))
 dashcam.run()
