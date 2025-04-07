@@ -20,11 +20,8 @@ classifiers = [
 version = "0.1.0"
 description = "A Raspberry Pi based dashcam"
 dependencies = [
-    "build",
-    "flit",
     "keyboard",
     "gps",
-    "imutils",
     "numpy",
     "opencv-contrib-python",
     "RPi-GPIO",
