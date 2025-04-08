@@ -14,7 +14,8 @@ parser.add_argument('-s', '--src', help='The video source to capture', default=0
 parser.add('-d', '--driver', help='the driver to use when access the camera', default='')
 parser.add_argument('-pre', '--prerecord', help='Pre-recording time (secs)', default='30')
 parser.add_argument('-post', '--postrecord', help='Post-recording time (secs)', default='30')
-parser.add_argument('-res', '--resolution', help='video resolution (hxv) in pixels', default='1440x1280')
+parser.add_argument('-w', '--width', help='video width in pixels', default=1440)
+parser.add_argument('-h', '--height', help='video height in pixels', default=1200)
 parser.add_argument('-ba', '--button_a', help='Button A GPIO Pin', default='23')
 parser.add_argument('-bb', '--button_b', help='Button B GPIO Pin', default='24')
 parser.add_argument('-led', '--led', help='LED GPIO Pin', default='16')
@@ -38,13 +39,14 @@ video_format = args.video_format
 button_A = int(args.button_a)
 button_B = int(args.button_b)
 LED_1 = int(args.led)
-camera_res = {'h': 1440,'v': 1280}
+height = args.height
+width = args.width
 buff_size = int(args.prerecord)
 extra_time = int(args.postrecord)
 vflip = args.vflip
 hflip = args.hflip
 
 dashcam = pidashcam.PiDashCam(dest_dir, src, driver, button_A, button_B, LED_1, video_format,
-    camera_res, buff_size, extra_time, vflip, hflip)
+    width, height, buff_size, extra_time, vflip, hflip)
 log.debug("dashcam = " + str(dashcam))
 dashcam.run()

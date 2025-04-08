@@ -1,15 +1,11 @@
 #! /usr/bin/python -u
 
+import cv2
 from datetime import datetime, timedelta
-from imutils import WebcamVideoStream
 import logging
 import os
 import threading
 import time
-
-#import picamera2 as picamera
-
-
 import Queue
 from myqueue import MyQueue
 
@@ -21,7 +17,7 @@ class Camera(threading.Thread):
     Capture video and store in a local folder
     """
 
-    def __init__(self, name, gps_queue, flush_buffer, recording,
+    def __init__(self, name, src, driver, gps_queue, flush_buffer, recording,
             recording_LED, dest_dir, video_format = 'h264',
             camera_res = {'h': 1440,'v': 1280}, buff_size = 30, extra_time = 30,
             vflip = False, hflip = False):
@@ -29,13 +25,16 @@ class Camera(threading.Thread):
 
         Keyword parameters
         name -- an informal name to identify the thread
+        src -- The video source to capture
+        driver -- The video driver to use
         gpsQueue -- Queue object from which to consume new fixes
         flushBuffer -- Event object that signals need to save the in-memory buffer
         recording -- Event object that signals whether or not to record video
         recordingLED -- GPIO object for the front panel LED
         destDir -- String object - where to save videos
         videoFormat -- the desired format for recorded video (default 'h264')
-        cameraRes -- the desired resolution of the recorded video (default 1440x1280)
+        width -- image width (default 1440)
+        height -- image height (default 1200)
         buffSize -- the size (in seconds) of the in-memory buffer (default 60s)
         extraTime -- how long to continue recording after flushBuffer is set
                 before saving (default 30s)
@@ -44,6 +43,7 @@ class Camera(threading.Thread):
         """
         super(Camera, self).__init__()
         self._name = name
+        self._src = src
         self._gps_queue = gps_queue
         self._flush_buffer = flush_buffer
         self._recording = recording
@@ -51,7 +51,8 @@ class Camera(threading.Thread):
 
         self._dest_dir = dest_dir
         self._video_format = video_format
-        self._camera_res = camera_res
+        self._width = width
+        self._height = height
         self._buff_size = buff_size
         self._extra_time = extra_time
         self._vflip = vflip
@@ -61,8 +62,18 @@ class Camera(threading.Thread):
 
         self._log = logging.getLogger(__name__)
         self._log.debug("Camera.__init__()")
-        self._running = True
-        self._camera = WebcamVideoStream(src=0).start()
+        
+        if driver is None:
+          self._cap = cv2.VideoCapture(self._src)
+        else:
+          self._cap = cv2.VideoCapture(self.src, driver)
+        
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, _width)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, _height)
+        self._grabbed, self._frame = self.cap.read()
+        self._running = False
+        self._read_lock = threading.Lock()
+        self.thread = None
 
     def run(self):
         """
