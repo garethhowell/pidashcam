@@ -1,30 +1,7 @@
 #! /usr/bin/python -u
 
 import pidashcam
-import threading
 import logging
-import argparse
-import os
-import rpI2C as i2c
-
-
-# parse the command-line
-parser = argparse.ArgumentParser()
-parser.add_argument('-s', '--src', help='The video source to capture', default=0)
-parser.add('-d', '--driver', help='the driver to use when access the camera', default='')
-parser.add_argument('-pre', '--prerecord', help='Pre-recording time (secs)', default='30')
-parser.add_argument('-post', '--postrecord', help='Post-recording time (secs)', default='30')
-parser.add_argument('-w', '--width', help='video width in pixels', default=1440)
-parser.add_argument('-h', '--height', help='video height in pixels', default=1200)
-parser.add_argument('-ba', '--button_a', help='Button A GPIO Pin', default='23')
-parser.add_argument('-bb', '--button_b', help='Button B GPIO Pin', default='24')
-parser.add_argument('-led', '--led', help='LED GPIO Pin', default='16')
-parser.add_argument('-d', '--destdir', help='Destination directory for videos',  default='/home/pi/Videos')
-parser.add_argument('-v', '--video_format', help="format of video, 'h264' or 'mjpeg'", default='h264', choices=['h264', 'mjpeg'])
-parser.add_argument('-l', '--log-level', help="Log level, 'info' or 'debug'", default='info', choices=['info', 'debug'])
-parser.add_argument('--vflip', help='Flip video vertically', action="store_true")
-parser.add_argument('--hflip', help='Flip video horizontally', action="store_true")
-args = parser.parse_args()
 
 # Initialise logging
 logging.basicConfig(level = {'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
@@ -32,21 +9,8 @@ log = logging.getLogger("pidashcam")
 log.setLevel({'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
 log.info("piDashCam started")
 log.debug(args)
-src = args.src
-driver = args.driver
-dest_dir = args.destdir
-video_format = args.video_format
-button_A = int(args.button_a)
-button_B = int(args.button_b)
-LED_1 = int(args.led)
-height = args.height
-width = args.width
-buff_size = int(args.prerecord)
-extra_time = int(args.postrecord)
-vflip = args.vflip
-hflip = args.hflip
 
-dashcam = pidashcam.PiDashCam(dest_dir, src, driver, button_A, button_B, LED_1, video_format,
-    width, height, buff_size, extra_time, vflip, hflip)
+
+dashcam = pidashcam.PiDashCam()
 log.debug("dashcam = " + str(dashcam))
 dashcam.run()

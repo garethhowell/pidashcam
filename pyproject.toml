@@ -7,18 +7,16 @@ name = "pidashcam"
 authors = [
     {name = "Gareth Howell", email = "gareth.howell@gmail.com"},
 ]
-readme = "README.md"
-license = {text = "MIT"}
+readme = "README.rst"
+license = "MIT"
 license-files = ["LICENSE"]
 dynamic = ["version", "description"]
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 keywords = [ "dashcam", "surveillance" ]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Private :: Do Not Upload"
 ]
-version = "0.1.0"
-description = "A Raspberry Pi based dashcam"
 dependencies = [
     "keyboard",
     "gps",

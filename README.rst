@@ -7,7 +7,7 @@ Prerequisites
 -------------
 
 -   various standard libraries
--   python-camera
+-   opencv-contrib-python
 -   python-gps
 -   python-rpi.gpio
 
@@ -15,11 +15,10 @@ Hardware
 --------
 
 -   Raspberry Pi (I used a Model B+)
--   Raspberry Pi Camera Module V2
+-   Any compatible USB webcam
 -   Adafruit Ultimate GPS breakout board connected using the UART on GPIO
     14 and 15
--   UPS PIco with 450mAh battery from
-    `ModMyPi <https://www.modmypi.com/>`__. PICo uses GPIO 22 and 27
+-   `LiFEPO4weredPi UPS from <https://lifepo4weredpi.com>`
 -   Pi Camera HDMI extender from `Tindie <https://www.tindie.com>`__
 -   Two momentary push buttons
 
