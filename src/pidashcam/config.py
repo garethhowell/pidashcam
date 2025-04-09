@@ -1,14 +1,14 @@
 src = 0
-prerecord = 30
-postrecord = 30
+pre_record = 30
+post_record = 30
 width = 1440
 height = 1200
-button_a = 23
-button_b = 24
-led = 16
-destdir = '/tmp'
+button_A = 37
+button_B = 38
+LED_1 = 16
+dest_dir = '/tmp'
 video_format = 'h264'
-log-level = 'info'
+log_level = 'debug'
 vflip = False
 hflip = False
 

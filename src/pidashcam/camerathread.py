@@ -1,6 +1,6 @@
 #! /usr/bin/python -u
 
-import buffer
+import ringBuffer as ringBuffer
 import config
 import cv2
 from datetime import datetime, timedelta
@@ -8,8 +8,6 @@ import logging
 import os
 import threading
 import time
-import Queue
-from myqueue import MyQueue
 
 SPEED_CONV = 2.23694 # convert m/s to mph
 
@@ -61,7 +59,7 @@ class Camera(threading.Thread):
 
     self._log = logging.getLogger(__name__)
     self._log.debug("Camera.__init__()")
-    
+
     self._running = False
     self._read_lock = threading.Lock()
     self.thread = None
@@ -80,7 +78,7 @@ class Camera(threading.Thread):
     thickness = cv2.FILLED
     margin = 2
     txt_size = cv2.getTextSize(text, font_face, scale, thickness)
-    
+
     end_x = pos[0] + txt_size[0][0] + margin
     end_y = pos[1] - txt_size[1][1] - margin
 
@@ -101,28 +99,28 @@ class Camera(threading.Thread):
         self._recordingLED.start(50)
         self._log.debug('Recording to ' + str(self._buff_size + self._extra_time) + ' seconds buffer')
         recording = True
-        
+
         # open the camera stream
         self._cap = cv2.VideoCapture(self._src)
         time.sleep(2)
 
         if self._cap.isOpened():
-          #Set the dimensions etc of the video frame       
+          #Set the dimensions etc of the video frame
           self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, _width)
           self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, _height)
           self._cap.isOpened()
         else:
           self._log.error("Camera could not be opened")
-            
-        while recording:  
+
+        while recording:
           self._frame = cap.read()[1]
           if self._frame is None:
             self._log.error("Camera returned no frame")
             self._buffer = []
             recording = False
 
-          
-          
+
+
           # Imprint the GPS data on the frame
           try:
             fix = self._gpsQueue.get(False)
@@ -143,7 +141,7 @@ class Camera(threading.Thread):
           # Check if we need to save the buffer
           if self._flush_buffer.isSet():
             self._ring_buffer.flush()
-            
+
             self._log.debug('Switching back to recording to buffer..')
             self._flush_buffer.clear()
             self._recording_LED.change_frequency(0.5)

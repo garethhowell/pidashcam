@@ -1,6 +1,5 @@
-#!/usr/bin/python -p
-
-"""PiDashCam Raspberry Pi dashcam
+"""
+PiDashCam Raspberry Pi dashcam
 
 A systemd compliant multi-threaded daemon to record video and respond to button presses
 
@@ -15,14 +14,11 @@ import atexit, socket
 from time import time, sleep
 from signal import pause
 import keyboard
-#import argparse
 import logging
-#import logging.handlers
-#import xmltodict
 import signal
 
+# Custom libraries
 import config
-from buffer import RingBuffer
 from camerathread import Camera
 from gpspoller import GPSPoller
 from myqueue import MyQueue
@@ -36,7 +32,7 @@ class PiDashCam():
     """
     PiDashCam - main thread
     """
-    def __init__():
+    def __init__(self):
         self._log  = logging.getLogger(__name__)
         self._log.debug("PiDashCam.__init__()")
 
@@ -48,8 +44,7 @@ class PiDashCam():
         self._LED_1 = config.LED_1
         self._width = config.width
         self._height = config.height
-        self._buff_size = config.buff_size
-        self._extra_time = config.extra_time
+        self._buff_size = (config.video_length)
         self._vflip = config.vflip
         self._hflip = config.hflip
 
@@ -63,7 +58,7 @@ class PiDashCam():
 
         # Internal event used to initiate a controlled shutdown
         self._local_shutdown = threading.Event()
-        
+
         # Setup a callback to catch SIGTERM
         signal.signal(signal.SIGTERM, self.sigcatch)
 
@@ -76,8 +71,8 @@ class PiDashCam():
         GPIO.setup(self._LED_1, GPIO.OUT)
         self._recording_LED = GPIO.PWM(self._LED_1, 0.5)
 
-        GPIO.add_event_detect(self.buttonA, GPIO.FALLING, callback=self.buttonAPressed, bouncetime=BOUNCE_TIME)
-        GPIO.add_event_detect(self.buttonB, GPIO.FALLING, callback=self.buttonBPressed, bouncetime=BOUNCE_TIME)
+        GPIO.add_event_detect(self._button_A, GPIO.FALLING, callback=self.button_A_pressed, bouncetime=BOUNCE_TIME)
+        GPIO.add_event_detect(self._button_B, GPIO.FALLING, callback=self.button_B_pressed, bouncetime=BOUNCE_TIME)
 
         # register function to cleanup at exit
         atexit.register(self.cleanup)
@@ -178,13 +173,13 @@ class PiDashCam():
             self._recording, self._recording_LED, self._dest_dir,
             self._video_format, self._width, self._height, self._buff_size, self._extra_time,
             self._vflip, self._hflip)
-        
+
         self._recording.set()
 
         # Start threads
         self._GPS_T.start()
         self._camera_T.start()
-        
+
         # Main Loop
         while not (self._local_shutdown.isSet() or self._UPS_Shutdown.isSet()) :
             # Only check for keyboard characters if a keyboard is connected!
@@ -208,3 +203,17 @@ class PiDashCam():
         self._camera_T.join()
         self._log.debug("Camera thread died.")
         self._log.info("Exiting")
+
+if __name__ == "__main__":
+  import logging
+
+  # Initialise logging
+  logging.basicConfig(level = {'info':logging.INFO, 'debug':logging.DEBUG}[config.log_level])
+  log = logging.getLogger("pidashcam")
+  log.setLevel({'info':logging.INFO, 'debug':logging.DEBUG}[config.log_level])
+  log.info("piDashCam started")
+
+
+  dashcam = PiDashCam()
+  log.debug("dashcam = " + str(dashcam))
+  dashcam.run()
