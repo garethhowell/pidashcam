@@ -1,8 +1,0 @@
-build
-flit
-keyboard
-gps
-imutils
-numpy
-opencv-contrib-python
-RPi.GPIO
