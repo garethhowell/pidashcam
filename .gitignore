@@ -5,6 +5,7 @@
 # Development artifacts
 /.python-version
 /.pdm-python
+pdm.lock
 
 # Compiled python modules.
 *.pyc
