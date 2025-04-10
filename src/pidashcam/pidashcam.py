@@ -165,6 +165,7 @@ class PiDashCam():
     def run(self):
 
         self._log.debug("PiDashCam.run()")
+        exit
 
         # create the GPS thread
         self._GPS_T = GPSPoller("gpsT", self._GPS_queue)
@@ -208,6 +209,7 @@ if __name__ == "__main__":
   import logging
 
   # Initialise logging
+  print(config.log_level)
   logging.basicConfig(level = {'info':logging.INFO, 'debug':logging.DEBUG}[config.log_level])
   log = logging.getLogger("pidashcam")
   log.setLevel({'info':logging.INFO, 'debug':logging.DEBUG}[config.log_level])
