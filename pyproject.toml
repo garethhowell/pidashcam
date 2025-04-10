@@ -25,6 +25,17 @@ dependencies = [
     "RPi-GPIO",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "mypy>=1.15.0",
+    "pycodestyle>=2.13.0",
+    "coverage>=7.8.0",
+    "pytest-cov>=6.1.1",
+    "pytest-mock>=3.14.0",
+    "pytest-asyncio>=0.26.0",
+]
+
 [project.urls]
 Home = "https://github.com/garethhowell/pidashcam"
 
@@ -290,3 +301,5 @@ overgeneral-exceptions= [
     "BaseException",
     "Exception"
 ]
+
+
