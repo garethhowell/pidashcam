@@ -6,6 +6,8 @@
 /.python-version
 /.pdm-python
 pdm.lock
+.coverage
+coverage.*
 
 # Compiled python modules.
 *.pyc
