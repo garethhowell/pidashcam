@@ -23,6 +23,7 @@ dependencies = [
     "numpy",
     "opencv-contrib-python",
     "RPi-GPIO",
+    "future>=1.0.0",
 ]
 
 [dependency-groups]
@@ -99,11 +100,11 @@ executionEnvironments = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov-report xml:coverage.xml --cov src --cov-fail-under 0 --cov-append -m 'not integration'"
+addopts = " --cov-report xml:coverage.xml --cov src --cov-fail-under 0 --cov-append -m 'not integration'"
+asyncio_default_fixture_loop_scope = "function"
 pythonpath = [
   "src"
 ]
-testpaths = "tests"
 junit_family = "xunit2"
 markers = [
     "integration: marks as integration test",

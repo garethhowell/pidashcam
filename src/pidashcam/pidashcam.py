@@ -9,11 +9,9 @@ A systemd compliant multi-threaded daemon to record video and respond to button 
 BOUNCE_TIME = 300
 
 # Standard libraries
-import io, os, sys, threading, termios, tty
-import atexit, socket
-from time import time, sleep
-from signal import pause
-import keyboard
+import sys, threading, termios, tty
+import atexit
+from time import sleep
 import logging
 import signal
 
@@ -171,9 +169,7 @@ class PiDashCam():
         self._GPS_T = GPSPoller("gpsT", self._GPS_queue)
         # ditto the Camera thread
         self._camera_T = Camera("cameraT", self._src, self._GPS_queue, self._flush_buffer,
-            self._recording, self._recording_LED, self._dest_dir,
-            self._video_format, self._width, self._height, self._buff_size, self._extra_time,
-            self._vflip, self._hflip)
+            self._recording)
 
         self._recording.set()
 

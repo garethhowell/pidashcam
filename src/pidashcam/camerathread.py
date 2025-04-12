@@ -16,10 +16,7 @@ class Camera(threading.Thread):
   Capture video and store in a local folder
   """
 
-  def __init__(self, name, src, gps_queue, flush_buffer, recording,
-        recording_LED, dest_dir, video_format = 'h264',
-        camera_res = {'h': 1440,'v': 1280}, buff_size = 60, extra_time = 30,
-        vflip = False, hflip = False):
+  def __init__(self, name, src, gps_queue, flush_buffer, recording):
     """Initialise the Camera
 
     Keyword parameters
@@ -28,15 +25,6 @@ class Camera(threading.Thread):
     gpsQueue -- Queue object from which to consume new fixes
     flushBuffer -- Event object that signals need to save the in-memory buffer
     recording -- Event object that signals whether or not to record video
-    recordingLED -- GPIO object for the front panel LED
-    destDir -- String object - where to save videos
-    videoFormat -- the desired format for recorded video (default 'h264')
-    width -- image width (default 1440)
-    height -- image height (default 1200)
-    extraTime -- how long to continue recording after flushBuffer is set
-            before saving (default 30s)
-    vflip -- whether or not to flip the video vertically (default False)
-    hflip -- whether or not to flip the video horizontally (default False)
     """
     super(Camera, self).__init__()
     self._name = name
@@ -44,16 +32,16 @@ class Camera(threading.Thread):
     self._gps_queue = gps_queue
     self._flush_buffer = flush_buffer
     self._recording = recording
-    self._recording_LED = recording_LED
+    self._recording_LED = config.recording_LED
 
-    self._dest_dir = dest_dir
-    self._video_format = video_format
-    self._width = width
-    self._height = height
-    self._buff_size = buff_size
-    self._extra_time = extra_time
-    self._vflip = vflip
-    self._hflip = hflip
+    self._dest_dir = config.dest_dir
+    self._video_format = config.video_format
+    self._width = config.width
+    self._height = config.height
+    self._buff_size = config.buff_size
+    self._extra_time = config.extra_time
+    self._vflip = config.vflip
+    self._hflip = config.hflip
 
     self._shutdown = threading.Event()
 
