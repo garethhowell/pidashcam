@@ -2,7 +2,6 @@
 import threading
 import logging
 from gps import *
-from myqueue import MyQueue
 
 ## GPSPoller Thread
 

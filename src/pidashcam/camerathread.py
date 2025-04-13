@@ -1,6 +1,6 @@
 #! /usr/bin/python -u
-
-import ringBuffer as ringBuffer
+import picamera2
+from picamera2 import CircularIO
 import config
 import cv2
 from datetime import datetime, timedelta
@@ -16,30 +16,28 @@ class Camera(threading.Thread):
   Capture video and store in a local folder
   """
 
-  def __init__(self, name, src, gps_queue, flush_buffer, recording):
+  def __init__(self, name, gps_queue, flush_buffer, recording):
     """Initialise the Camera
 
     Keyword parameters
     name -- an informal name to identify the thread
-    src -- The video source to capture
     gpsQueue -- Queue object from which to consume new fixes
     flushBuffer -- Event object that signals need to save the in-memory buffer
     recording -- Event object that signals whether or not to record video
     """
     super(Camera, self).__init__()
     self._name = name
-    self._src = src
+    self._src = config.src
     self._gps_queue = gps_queue
     self._flush_buffer = flush_buffer
     self._recording = recording
-    self._recording_LED = config.recording_LED
+    self._recording_LED = config.LED_1
 
     self._dest_dir = config.dest_dir
     self._video_format = config.video_format
     self._width = config.width
     self._height = config.height
     self._buff_size = config.buff_size
-    self._extra_time = config.extra_time
     self._vflip = config.vflip
     self._hflip = config.hflip
 
@@ -53,7 +51,7 @@ class Camera(threading.Thread):
     self.thread = None
 
     # Create the ring buffer
-    self._ring_buffer = RingBuffer()
+    self._ring_buffer = RingBuffer(self)
 
   def __draw_label(img, text, pos, bg_color):
     """
@@ -73,6 +71,20 @@ class Camera(threading.Thread):
     cv2.rectangle(img, pos, (end-x, end_y), bg_color, thickness)
     cv2.putText(img, text, pos, font_face, scale, color, 1, cv2.LINE_AA)
 
+  def flush_buffer(self):
+    """
+    Save the contents of the ring buffer to a file
+    """
+    now = datetime.datetime.now()
+    date = now.strftime("%Y%m%d_%H.%M.%S")
+    fn = "output/{}/{}.{}".format(self._src, date, self._video_format)
+    writer = cv2.VideoWriter(fn, cv2.VideoWriter_dourcc(*"mp4v"), 30.0, (config.width, config.height))
+    self._log.info("Saving file {}".format(fn))
+    for frame in self._buffer:
+      writer.write(frame)
+    writer.release()
+
+
 
   def run(self):
     """
@@ -85,7 +97,7 @@ class Camera(threading.Thread):
     while not self._shutdown.isSet():
       while self._recording.isSet():
         self._recordingLED.start(50)
-        self._log.debug('Recording to ' + str(self._buff_size + self._extra_time) + ' seconds buffer')
+        self._log.debug('Recording to ' + str(self._buff_size) + ' seconds buffer')
         recording = True
 
         # open the camera stream
@@ -124,14 +136,14 @@ class Camera(threading.Thread):
             now = dt.strftime('%d-%b-%d %H:%M:%S')
             self.__draw_label(frame, now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True", (0, 0), (255, 0, 0))
 
-          self._ring_buffer.write(frame)
+          self._ring_buffer.add(frame)
 
           # Check if we need to save the buffer
           if self._flush_buffer.isSet():
-            self._ring_buffer.flush()
+            self.flush_buffer()
 
             self._log.debug('Switching back to recording to buffer..')
-            self._flush_buffer.clear()
+            self._ring_buffer.empty()
             self._recording_LED.change_frequency(0.5)
 
           # Pause recording if necessary

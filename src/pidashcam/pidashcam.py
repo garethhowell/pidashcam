@@ -2,8 +2,6 @@
 PiDashCam Raspberry Pi dashcam
 
 A systemd compliant multi-threaded daemon to record video and respond to button presses
-
-
 """
 
 BOUNCE_TIME = 300
@@ -17,9 +15,9 @@ import signal
 
 # Custom libraries
 import config
-from camerathread import Camera
-from gpspoller import GPSPoller
-from myqueue import MyQueue
+from .camerathread import Camera
+from .gpspoller import GPSPoller
+from .myqueue import MyQueue
 
 # Specials
 import RPi.GPIO as GPIO
@@ -61,16 +59,16 @@ class PiDashCam():
         signal.signal(signal.SIGTERM, self.sigcatch)
 
         # GPIO initialisation
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
-        GPIO.setup(self._button_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self._button_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        #GPIO.setmode(GPIO.BCM)
+        #GPIO.setwarnings(False)
+        #GPIO.setup(self._button_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        #GPIO.setup(self._button_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-        GPIO.setup(self._LED_1, GPIO.OUT)
-        self._recording_LED = GPIO.PWM(self._LED_1, 0.5)
+        #GPIO.setup(self._LED_1, GPIO.OUT)
+        #self._recording_LED = GPIO.PWM(self._LED_1, 0.5)
 
-        GPIO.add_event_detect(self._button_A, GPIO.FALLING, callback=self.button_A_pressed, bouncetime=BOUNCE_TIME)
-        GPIO.add_event_detect(self._button_B, GPIO.FALLING, callback=self.button_B_pressed, bouncetime=BOUNCE_TIME)
+        #GPIO.add_event_detect(self._button_A, GPIO.FALLING, callback=self.button_A_pressed, bouncetime=BOUNCE_TIME)
+        #GPIO.add_event_detect(self._button_B, GPIO.FALLING, callback=self.button_B_pressed, bouncetime=BOUNCE_TIME)
 
         # register function to cleanup at exit
         atexit.register(self.cleanup)
@@ -168,7 +166,7 @@ class PiDashCam():
         # create the GPS thread
         self._GPS_T = GPSPoller("gpsT", self._GPS_queue)
         # ditto the Camera thread
-        self._camera_T = Camera("cameraT", self._src, self._GPS_queue, self._flush_buffer,
+        self._camera_T = Camera("cameraT", self._GPS_queue, self._flush_buffer,
             self._recording)
 
         self._recording.set()
@@ -212,6 +210,6 @@ if __name__ == "__main__":
   log.info("piDashCam started")
 
 
-  dashcam = PiDashCam()
-  log.debug("dashcam = " + str(dashcam))
-  dashcam.run()
+  #dashcam = PiDashCam()
+  #log.debug("dashcam = " + str(dashcam))
+  #dashcam.run()

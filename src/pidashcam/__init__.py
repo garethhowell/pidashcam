@@ -1,11 +1,11 @@
 """PiDashCam Raspberry Pi dashcam
 """
-from future import annotations
+from __future__ import annotations
 
 __version__ = "2.0.0"
 
 from .pidashcam import PiDashCam
 from .gpspoller import GPSPoller
 from .camerathread import Camera
-from .upspico import UPSPIco
+import config
 from .myqueue import MyQueue

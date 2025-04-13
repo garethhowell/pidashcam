@@ -17,3 +17,4 @@ hflip = False
 # kept in each camera buffer.  A 10 second clip
 # will capture 300 frames (10s * 30fps)
 video_length = 5 * 60
+buff_size = pre_record + video_length + post_record
