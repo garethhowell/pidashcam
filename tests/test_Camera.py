@@ -1,5 +1,5 @@
 """ """
-import pidashcam
+from pidashcam import Camera
 import pytest
 
 @pytest.fixture

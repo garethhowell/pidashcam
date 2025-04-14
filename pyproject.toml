@@ -11,7 +11,7 @@ readme = "README.rst"
 license = "MIT"
 license-files = ["LICENSE"]
 dynamic = ["version", "description"]
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 keywords = [ "dashcam", "surveillance" ]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
@@ -19,12 +19,9 @@ classifiers = [
 ]
 dependencies = [
     "keyboard",
-    "gps",
     "numpy",
-    "opencv-contrib-python",
     "RPi-GPIO",
     "future>=1.0.0",
-    "picamera2>=0.3.25",
 ]
 
 [dependency-groups]
@@ -102,9 +99,11 @@ executionEnvironments = [
 
 [tool.pytest.ini_options]
 #addopts = "--cov-report xml:coverage.xml --cov src --cov-fail-under 0 --cov-append -m 'not integration'"
-asyncio_default_fixture_loop_scope = "function"
 pythonpath = [
   "src"
+]
+testpaths = [
+  "tests"
 ]
 junit_family = "xunit2"
 markers = [
