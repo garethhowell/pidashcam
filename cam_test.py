@@ -75,6 +75,3 @@ class Camera():
         time.sleep(1)
         self.camera.close()
         self.log.debug("Ending camera thread")
-
-if __name__ == "__main__":
-    cam =

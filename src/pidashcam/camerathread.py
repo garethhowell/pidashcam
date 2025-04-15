@@ -1,9 +1,14 @@
-import os, threading, time, logging
-import picamera2 as picamera
+import os
+import threading
+import time
+import logging
 from datetime import datetime, timedelta
-import config
-
 import queue
+
+import config
+import picamera2 as picamera
+
+
 #from .myqueue import MyQueue
 
 SPEED_CONV = 2.23694 # convert m/s to mph
@@ -69,11 +74,11 @@ class Camera(threading.Thread):
                     self._camera.wait_recording(0.2)
                     # Update the annotation text
                     try:
-                        fix = self._gpsQueue.get(False)
-                    except Queue.Empty:
+                        fix = self._gps_queue.get(False)
+                    except self._gps_queue.empty():
                         pass
                     else:
-                        self._gpsQueue.clear()
+                        self._gps_queue.clear()
                         lat = fix.latitude
                         lon = fix.longitude
                         speed = fix.speed * SPEED_CONV
@@ -83,14 +88,14 @@ class Camera(threading.Thread):
                         self._camera.annotate_text = now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True"
 
                     # Check if we need to save the buffer
-                    if self._flushBuffer.isSet():
+                    if self._flush_buffer.isSet():
                         i = datetime.now()
                         f = i.strftime('%Y%m%d-%H%M%S.' + config.video_format)
                         out_file = str(config.dest_dir) + '/' + f
                         self.log.debug('Flushing buffer to ' + out_file)
                         stream.copy_to(out_file)
                         self.log.debug('Switching back to recording to buffer..')
-                        self._flushBuffer.clear()
+                        self._flush_buffer.clear()
                         self._recording_LED.ChangeFrequency(0.5)
 
                     # Pause recording if necessary
@@ -98,7 +103,7 @@ class Camera(threading.Thread):
                         self.log.debug("Recording paused")
                         self._recording_LED.stop()
                     if self._shutdown.isSet():
-                        self._flushBuffer.set()
+                        self._flush_buffer.set()
                         self._recording.clear()
             time.sleep(1)
         self._camera.close()
