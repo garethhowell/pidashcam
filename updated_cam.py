@@ -43,7 +43,7 @@ def start_annotated_preview():
     threading.Thread(target=preview_loop, daemon=True).start()
 
 # Start the annotated preview in a background thread
-start_annotated_preview()
+#start_annotated_preview()
 
 print("Recording... Press Ctrl+C to stop or trigger save logic.")
 

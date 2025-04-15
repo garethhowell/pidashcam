@@ -9,6 +9,7 @@ pdm.lock
 .coverage
 coverage.*
 .lgd*
+/.venv/
 
 # Compiled python modules.
 *.pyc
