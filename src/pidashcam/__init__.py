@@ -7,5 +7,5 @@ __version__ = "2.0.0"
 from .pidashcam import PiDashCam
 from .gpspoller import GPSPoller
 from .camerathread import Camera
-import config
+from . import config
 from .myqueue import MyQueue

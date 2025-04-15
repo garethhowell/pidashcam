@@ -50,9 +50,9 @@ class Camera(threading.Thread):
         self.log.debug("Camera.run()")
 
         # Set up the camera
-        self._camera.resolution = (conf.width, config.height)
+        self._camera.resolution = (config.width, config.height)
         self._camera.vflip = config.vflip
-        self._camera.hflip = conf.hflip
+        self._camera.hflip = config.hflip
         self._camera.annotate_background = picamera.Color('black')
 
         # Create in-memory circular buffer

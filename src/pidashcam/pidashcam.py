@@ -37,7 +37,7 @@ class PiDashCam():
         self._video_format = config.video_format
         self._button_A = config.button_A
         self._button_B = config.button_B
-        self._LED_1 = config.LED_1
+        self._recording_LED = config.LED_1
         self._width = config.width
         self._height = config.height
         self._buff_size = (config.video_length)
@@ -167,7 +167,7 @@ class PiDashCam():
         self._GPS_T = GPSPoller("gpsT", self._GPS_queue)
         # ditto the Camera thread
         self._camera_T = Camera("cameraT", self._GPS_queue, self._flush_buffer,
-            self._recording)
+            self._recording, self._recording_LED)
 
         self._recording.set()
 
@@ -176,7 +176,7 @@ class PiDashCam():
         self._camera_T.start()
 
         # Main Loop
-        while not (self._local_shutdown.isSet() or self._UPS_Shutdown.isSet()) :
+        while not (self._local_shutdown.isSet()) :
             # Only check for keyboard characters if a keyboard is connected!
             # This won't be the case if we are running under systemd
             if sys.stdin.isatty():
