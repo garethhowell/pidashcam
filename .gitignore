@@ -8,6 +8,7 @@
 pdm.lock
 .coverage
 coverage.*
+.ldg*
 
 # Compiled python modules.
 *.pyc
