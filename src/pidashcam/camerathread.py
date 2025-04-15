@@ -1,164 +1,110 @@
-#! /usr/bin/python -u
-import picamera2
-from picamera2 import CircularIO
-import config
-import cv2
+import os, threading, time, logging
+import picamera2 as picamera
 from datetime import datetime, timedelta
-import logging
-import os
-import threading
-import time
+import config
+
+import queue
+#from .myqueue import MyQueue
 
 SPEED_CONV = 2.23694 # convert m/s to mph
 
 class Camera(threading.Thread):
-  """Camera
-  Capture video and store in a local folder
-  """
+    """Camera
 
-  def __init__(self, name, gps_queue, flush_buffer, recording):
-    """Initialise the Camera
-
-    Keyword parameters
-    name -- an informal name to identify the thread
-    gpsQueue -- Queue object from which to consume new fixes
-    flushBuffer -- Event object that signals need to save the in-memory buffer
-    recording -- Event object that signals whether or not to record video
-    """
-    super(Camera, self).__init__()
-    self._name = name
-    self._src = config.src
-    self._gps_queue = gps_queue
-    self._flush_buffer = flush_buffer
-    self._recording = recording
-    self._recording_LED = config.LED_1
-
-    self._dest_dir = config.dest_dir
-    self._video_format = config.video_format
-    self._width = config.width
-    self._height = config.height
-    self._buff_size = config.buff_size
-    self._vflip = config.vflip
-    self._hflip = config.hflip
-
-    self._shutdown = threading.Event()
-
-    self._log = logging.getLogger(__name__)
-    self._log.debug("Camera.__init__()")
-
-    self._running = False
-    self._read_lock = threading.Lock()
-    self.thread = None
-
-    # Create the ring buffer
-    self._ring_buffer = RingBuffer(self)
-
-  def __draw_label(img, text, pos, bg_color):
-    """
-    Convenience function to label the image
+    Capture video using the PiCamera and store in a local folder
     """
 
-    font_face = cv2.FONT_HERSHEY_SIMPLEX
-    scale = 0.4
-    color = (0, 0, 0)
-    thickness = cv2.FILLED
-    margin = 2
-    txt_size = cv2.getTextSize(text, font_face, scale, thickness)
+    def __init__(self, name, gps_queue, flush_buffer, recording,
+            recording_LED):
+        """Initialise the Pi-Camera
 
-    end_x = pos[0] + txt_size[0][0] + margin
-    end_y = pos[1] - txt_size[1][1] - margin
+        Keyword parameters
+        name -- an informal name to identify the thread
+        gps_queue -- Queue object from which to consume new fixes
+        flush_buffer -- Event object that signals need to save the in-memory buffer
+        recording -- Event object that signals whether or not to record video
+        recording_LED -- GPIO object for the front panel LED
+        """
+        super(Camera, self).__init__()
+        self._name = name
+        self._gps_queue = gps_queue
+        self._flush_buffer = flush_buffer
+        self._recording = recording
+        self._recording_LED = recording_LED
 
-    cv2.rectangle(img, pos, (end-x, end_y), bg_color, thickness)
-    cv2.putText(img, text, pos, font_face, scale, color, 1, cv2.LINE_AA)
+        self._dest_dir = config.dest_dir
+        self._video_format = config.video_format
 
-  def flush_buffer(self):
-    """
-    Save the contents of the ring buffer to a file
-    """
-    now = datetime.datetime.now()
-    date = now.strftime("%Y%m%d_%H.%M.%S")
-    fn = "output/{}/{}.{}".format(self._src, date, self._video_format)
-    writer = cv2.VideoWriter(fn, cv2.VideoWriter_dourcc(*"mp4v"), 30.0, (config.width, config.height))
-    self._log.info("Saving file {}".format(fn))
-    for frame in self._buffer:
-      writer.write(frame)
-    writer.release()
+        self._shutdown = threading.Event()
 
+        self.log = logging.getLogger(__name__)
+        self.log.debug("Camera.__init__()")
+        self._running = True
+        self._camera = picamera.Picamera2()
 
+    def run(self):
+        """
+        Overrides the super run to do the actual work
+        """
 
-  def run(self):
-    """
-    Overrides the super run to do the actual work
-    """
+        self.log.debug("Camera.run()")
 
-    self._log.debug("Camera.run()")
+        # Set up the camera
+        self._camera.resolution = (conf.width, config.height)
+        self._camera.vflip = config.vflip
+        self._camera.hflip = conf.hflip
+        self._camera.annotate_background = picamera.Color('black')
 
-    # Main Loop
-    while not self._shutdown.isSet():
-      while self._recording.isSet():
-        self._recordingLED.start(50)
-        self._log.debug('Recording to ' + str(self._buff_size) + ' seconds buffer')
-        recording = True
+        # Create in-memory circular buffer
+        # Needs to be big enough for pre and post record
+        stream = picamera.PiCameraCircularIO(self._camera, seconds=config.buffer_size)
 
-        # open the camera stream
-        self._cap = cv2.VideoCapture(self._src)
-        time.sleep(2)
+        # Main Loop
+        while not self._shutdown.isSet():
+            while self._recording.isSet():
+                self._recording_LED.start(50)
+                self.log.debug('Recording to ' + str(config.buffer_size) + ' seconds buffer')
+                self._camera.start_recording(stream, format=config.video_format)
+                while self._recording.isSet():
+                    self._camera.wait_recording(0.2)
+                    # Update the annotation text
+                    try:
+                        fix = self._gpsQueue.get(False)
+                    except Queue.Empty:
+                        pass
+                    else:
+                        self._gpsQueue.clear()
+                        lat = fix.latitude
+                        lon = fix.longitude
+                        speed = fix.speed * SPEED_CONV
+                        track = fix.track
+                        i = datetime.now()
+                        now = i.strftime('%d-%b-%d %H:%M:%S')
+                        self._camera.annotate_text = now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True"
 
-        if self._cap.isOpened():
-          #Set the dimensions etc of the video frame
-          self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, _width)
-          self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, _height)
-          self._cap.isOpened()
-        else:
-          self._log.error("Camera could not be opened")
+                    # Check if we need to save the buffer
+                    if self._flushBuffer.isSet():
+                        i = datetime.now()
+                        f = i.strftime('%Y%m%d-%H%M%S.' + config.video_format)
+                        out_file = str(config.dest_dir) + '/' + f
+                        self.log.debug('Flushing buffer to ' + out_file)
+                        stream.copy_to(out_file)
+                        self.log.debug('Switching back to recording to buffer..')
+                        self._flushBuffer.clear()
+                        self._recording_LED.ChangeFrequency(0.5)
 
-        while recording:
-          self._frame = cap.read()[1]
-          if self._frame is None:
-            self._log.error("Camera returned no frame")
-            self._buffer = []
-            recording = False
+                    # Pause recording if necessary
+                    if not self._recording.isSet():
+                        self.log.debug("Recording paused")
+                        self._recording_LED.stop()
+                    if self._shutdown.isSet():
+                        self._flushBuffer.set()
+                        self._recording.clear()
+            time.sleep(1)
+        self._camera.close()
+        self.log.debug("Ending camera thread")
 
-
-
-          # Imprint the GPS data on the frame
-          try:
-            fix = self._gpsQueue.get(False)
-          except Queue.Empty:
-            pass
-          else:
-            self._gps_queue.clear()
-            lat = fix.latitude
-            lon = fix.longitude
-            speed = fix.speed * SPEED_CONV
-            track = fix.track
-            dt = datetime.now()
-            now = dt.strftime('%d-%b-%d %H:%M:%S')
-            self.__draw_label(frame, now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True", (0, 0), (255, 0, 0))
-
-          self._ring_buffer.add(frame)
-
-          # Check if we need to save the buffer
-          if self._flush_buffer.isSet():
-            self.flush_buffer()
-
-            self._log.debug('Switching back to recording to buffer..')
-            self._ring_buffer.empty()
-            self._recording_LED.change_frequency(0.5)
-
-          # Pause recording if necessary
-          if not self._recording.isSet():
-            self._log.debug("Recording paused")
-            self._recording_LED.stop()
-          if self._shutdown.isSet():
-            self._flush_buffer.set()
-            self._recording.clear()
-
-    time.sleep(1)
-    self._camera.close()
-    self._log.debug("Ending camera thread")
-
-  def join(self, timeout=None):
-    """Shutdown the camera"""
-    self._shutdown.set()
-    super(Camera, self).join(timeout)
+    def join(self, timeout=None):
+        """Shutdown the camera"""
+        self._shutdown.set()
+        super(Camera, self).join(timeout)
