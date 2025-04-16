@@ -14,7 +14,7 @@ import sys, threading, termios, tty
 from time import sleep
 
 # Custom libraries
-from . import config
+import config
 from camerathread import Camera
 from gpspoller import GPSPoller
 from myqueue import MyQueue
@@ -86,7 +86,7 @@ class PiDashCam():
             return
 
         self.log.debug('Button A has been pressed')
-        t = threading.Timer(self.extraTime, self.set_flush_buffer)
+        t = threading.Timer(config.post-record, self.set_flush_buffer)
         t.start()
         # Start flashing LED1 more frequently
         self.recording_LED.change_frequency(1)
@@ -105,7 +105,7 @@ class PiDashCam():
             return
 
         self._log.debug('Button B has been pressed')
-        if self._recording.isSet():
+        if self._recording.is_set():
             self._flush_buffer.set()
             sleep (1)
             self._recording.clear()
@@ -176,7 +176,7 @@ class PiDashCam():
         self._camera_T.start()
 
         # Main Loop
-        while not (self._local_shutdown.isSet()) :
+        while not (self._local_shutdown.is_set()) :
             # Only check for keyboard characters if a keyboard is connected!
             # This won't be the case if we are running under systemd
             if sys.stdin.isatty():
@@ -210,6 +210,6 @@ if __name__ == "__main__":
   log.info("piDashCam started")
 
 
-  #dashcam = PiDashCam()
-  #log.debug("dashcam = " + str(dashcam))
-  #dashcam.run()
+  dashcam = PiDashCam()
+  log.debug("dashcam = " + str(dashcam))
+  dashcam.run()

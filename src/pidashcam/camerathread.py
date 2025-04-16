@@ -4,12 +4,12 @@ import logging
 import os
 from picamera2 import Picamera2, Preview
 from picamera2.encoders import H264Encoder
-from picamera.outputs import CircularOutput
+from picamera2.outputs import CircularOutput
 import queue
 import threading
 import time
 
-from . import config
+import config
 from myqueue import MyQueue
 
 #from .myqueue import MyQueue
