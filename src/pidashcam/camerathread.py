@@ -1,13 +1,16 @@
+from datetime import datetime, timedelta
+from libcamera import Transform
+import logging
 import os
+from picamera2 import Picamera2, Preview
+from picamera2.encoders import H264Encoder
+from picamera.outputs import CircularOutput
+import queue
 import threading
 import time
-import logging
-from datetime import datetime, timedelta
-import queue
 
-import config
-import picamera2 as picamera
-
+from . import config
+from myqueue import MyQueue
 
 #from .myqueue import MyQueue
 
@@ -37,15 +40,60 @@ class Camera(threading.Thread):
         self._recording = recording
         self._recording_LED = recording_LED
 
-        self._dest_dir = config.dest_dir
-        self._video_format = config.video_format
-
         self._shutdown = threading.Event()
 
         self.log = logging.getLogger(__name__)
         self.log.debug("Camera.__init__()")
         self._running = True
-        self._camera = picamera.Picamera2()
+
+        self._camera = Picamera2()
+        video_config = self._camera.create_video_configuration(
+                      main={"size": (config.width, config.height)},
+                      transform=Transform(hflip=config.hflip, vflip=config.vflip)
+                      )
+        self._camera.configure(video_config)
+        self._encoder = H264Encoder()
+        self._output = CircularOutput()
+
+    def __update_annotation():
+      # Update the annotation text
+      try:
+          fix = self._gps_queue.get(False)
+      except self._gps_queue.empty():
+          pass
+      else:
+          self._gps_queue.clear()
+          lat = fix.latitude
+          lon = fix.longitude
+          speed = fix.speed * SPEED_CONV
+          track = fix.track
+          i = datetime.now()
+          now = i.strftime('%d-%b-%d %H:%M:%S')
+          annotation = now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True"
+          return(annotation)
+
+    # Function to overlay annotations using OpenCV
+    def __annotate_frame(frame, annotation):
+
+      cv2.putText(frame, annotation, (10, 50), cv2.FONT_HERSHEY_SIMPLEX,
+                  1, (255, 255, 255), 2, cv2.LINE_AA)
+      return frame
+
+    # Live preview with annotation (optional, needs display)
+    def __start_annotated_preview():
+      self._camera.start_preview(Preview.NULL)  # Can also use Preview.NULL if headless
+
+      def preview_loop():
+          while True:
+              frame = self._camera.capture_array()
+              annotation = __update_annotation()
+              frame = __annotate_frame(frame, annotation)
+              # You can display it or just annotate it for recording
+              cv2.imshow("Preview", frame)
+              if cv2.waitKey(1) == ord('q'):
+                  break
+
+      threading.Thread(target=preview_loop, daemon=True).start()
 
     def run(self):
         """
@@ -54,46 +102,27 @@ class Camera(threading.Thread):
 
         self.log.debug("Camera.run()")
 
-        # Set up the camera
-        self._camera.resolution = (config.width, config.height)
-        self._camera.vflip = config.vflip
-        self._camera.hflip = config.hflip
-        self._camera.annotate_background = picamera.Color('black')
-
-        # Create in-memory circular buffer
-        # Needs to be big enough for pre and post record
-        stream = picamera.PiCameraCircularIO(self._camera, seconds=config.buffer_size)
-
         # Main Loop
         while not self._shutdown.isSet():
             while self._recording.isSet():
                 self._recording_LED.start(50)
                 self.log.debug('Recording to ' + str(config.buffer_size) + ' seconds buffer')
-                self._camera.start_recording(stream, format=config.video_format)
+                __start_annotated_preview()
+
                 while self._recording.isSet():
                     self._camera.wait_recording(0.2)
-                    # Update the annotation text
-                    try:
-                        fix = self._gps_queue.get(False)
-                    except self._gps_queue.empty():
-                        pass
-                    else:
-                        self._gps_queue.clear()
-                        lat = fix.latitude
-                        lon = fix.longitude
-                        speed = fix.speed * SPEED_CONV
-                        track = fix.track
-                        i = datetime.now()
-                        now = i.strftime('%d-%b-%d %H:%M:%S')
-                        self._camera.annotate_text = now + " " + "{0:0.3f}".format(lat) + " " + "{0:0.3f}".format(lon) + " " + "{0:0.0f}".format(speed) + " m/s " + "{0:0.0f}".format(track) + " True"
-
-                    # Check if we need to save the buffer
+                    # Check if we need to save the video
                     if self._flush_buffer.isSet():
                         i = datetime.now()
                         f = i.strftime('%Y%m%d-%H%M%S.' + config.video_format)
                         out_file = str(config.dest_dir) + '/' + f
                         self.log.debug('Flushing buffer to ' + out_file)
-                        stream.copy_to(out_file)
+                        self._output.fileout = out_file
+                        self._output.start()
+
+                        # wait for  while
+                        # Stop saving video
+                        self._output.stop()
                         self.log.debug('Switching back to recording to buffer..')
                         self._flush_buffer.clear()
                         self._recording_LED.ChangeFrequency(0.5)

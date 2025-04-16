@@ -7,17 +7,17 @@ A systemd compliant multi-threaded daemon to record video and respond to button 
 BOUNCE_TIME = 300
 
 # Standard libraries
-import sys, threading, termios, tty
 import atexit
-from time import sleep
 import logging
 import signal
+import sys, threading, termios, tty
+from time import sleep
 
 # Custom libraries
-import config
-from .camerathread import Camera
-from .gpspoller import GPSPoller
-from .myqueue import MyQueue
+from . import config
+from camerathread import Camera
+from gpspoller import GPSPoller
+from myqueue import MyQueue
 
 # Specials
 import RPi.GPIO as GPIO
