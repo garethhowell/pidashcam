@@ -15,12 +15,12 @@ from time import sleep
 
 # Custom libraries
 import config
-from camerathread import Camera
-from gpspoller import GPSPoller
-from myqueue import MyQueue
+from .camerathread import Camera
+from .gpspoller import GPSPoller
+from .myqueue import MyQueue
 
 # Specials
-import RPi.GPIO as GPIO
+from gpiozero import Button, LED
 
 
 
@@ -31,18 +31,6 @@ class PiDashCam():
     def __init__(self):
         self._log  = logging.getLogger(__name__)
         self._log.debug("PiDashCam.__init__()")
-
-        self._src = config.src
-        self._dest_dir = config.dest_dir
-        self._video_format = config.video_format
-        self._button_A = config.button_A
-        self._button_B = config.button_B
-        self._recording_LED = config.LED_1
-        self._width = config.width
-        self._height = config.height
-        self._buff_size = (config.video_length)
-        self._vflip = config.vflip
-        self._hflip = config.hflip
 
         self._GPS_T = None
         self._camera_T = None
@@ -56,24 +44,16 @@ class PiDashCam():
         self._local_shutdown = threading.Event()
 
         # Setup a callback to catch SIGTERM
-        signal.signal(signal.SIGTERM, self.sigcatch)
+        signal.signal(signal.SIGTERM, self.__sigcatch)
 
         # GPIO initialisation
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
-        GPIO.setup(self._button_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self._button_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        self._recording_LED = LED(config.LED_1)
 
-        GPIO.setup(config.LED_1, GPIO.OUT)
-        self._recording_LED = GPIO.PWM(config.LED_1, 0.5)
-
-        GPIO.add_event_detect(self._button_A, GPIO.FALLING, callback=self.button_A_pressed, bouncetime=BOUNCE_TIME)
-        GPIO.add_event_detect(self._button_B, GPIO.FALLING, callback=self.button_B_pressed, bouncetime=BOUNCE_TIME)
 
         # register function to cleanup at exit
-        atexit.register(self.cleanup)
+        atexit.register(self.__cleanup)
 
-    def button_A_pressed(self, channel):
+    def __button_A_pressed(self, channel):
         """
         Button A interrupt service routine
         Flush the in-memory buffer
@@ -82,17 +62,17 @@ class PiDashCam():
         # This test is here because the user *might* have another HAT plugged in or another circuit that produces a
         # falling-edge signal on another GPIO pin.
 
-        if channel != self._button_A:
+        if channel != config.button_A:
             return
 
         self.log.debug('Button A has been pressed')
         t = threading.Timer(config.post-record, self.set_flush_buffer)
         t.start()
         # Start flashing LED1 more frequently
-        self.recording_LED.change_frequency(1)
+        self._recording_LED.blink(1)
 
 
-    def button_B_pressed(self, channel):
+    def __button_B_pressed(self, channel):
         """
         Button B interrupt service routine
         Pause/resume recording
@@ -101,7 +81,7 @@ class PiDashCam():
         # This test is here because the user *might* have another HAT plugged in or another circuit that produces a
         # falling-edge signal on another GPIO pin.
 
-        if channel != self._button_B:
+        if channel != config.button_B:
             return
 
         self._log.debug('Button B has been pressed')
@@ -109,14 +89,14 @@ class PiDashCam():
             self._flush_buffer.set()
             sleep (1)
             self._recording.clear()
-            self._recording_LED.stop()
+            self._recording_LED.off()
             self._log.debug('Recording suspended')
         else:
             self._recording.set()
             self._log.debug('Recording resumed')
-            self._recording_LED.change_frequency(0.5)
+            self._recording_LED.blink(0.5)
 
-    def sigcatch(self, signum, frame):
+    def __sigcatch(self, signum, frame):
         """
         Signal handler
         """
@@ -133,7 +113,7 @@ class PiDashCam():
             sleep(1)
             sys.exit(0)
 
-    def cleanup(self):
+    def __cleanup(self):
         """
         GPIO cleanup
         """
@@ -141,10 +121,10 @@ class PiDashCam():
         self._log.debug("Cleanup")
         self._log.info("Stopped")
 
-    def set_flush_buffer(self):
+    def __set_flush_buffer(self):
         self._flush_buffer.set()
 
-    def getch(self):
+    def __getch(self):
         """ getch - utility function to read a character from the keyboard
         """
 
@@ -166,7 +146,7 @@ class PiDashCam():
         # create the GPS thread
         self._GPS_T = GPSPoller("gpsT", self._GPS_queue)
         # ditto the Camera thread
-        self._camera_T = Camera("cameraT", self._GPS_queue, self._flush_buffer,
+        self._camera_T = Camera("cameraT", self._GPS_queue, self.__flush_buffer,
             self._recording, self._recording_LED)
 
         self._recording.set()
@@ -183,7 +163,7 @@ class PiDashCam():
                 char = self.getch()
                 if char == "s":
                     self._log.debug("save")
-                    t = threading.Timer(self._extra_time, self._set_flush_buffer)
+                    t = threading.Timer(self._extra_time, self.__set_flush_buffer)
                     t.start()
                 elif char == "q":
                     self._log.debug("Shutdown")

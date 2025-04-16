@@ -10,9 +10,8 @@ import threading
 import time
 
 import config
-from myqueue import MyQueue
 
-#from .myqueue import MyQueue
+from .myqueue import MyQueue
 
 SPEED_CONV = 2.23694 # convert m/s to mph
 
