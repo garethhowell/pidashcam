@@ -59,16 +59,16 @@ class PiDashCam():
         signal.signal(signal.SIGTERM, self.sigcatch)
 
         # GPIO initialisation
-        #GPIO.setmode(GPIO.BCM)
-        #GPIO.setwarnings(False)
-        #GPIO.setup(self._button_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        #GPIO.setup(self._button_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(self._button_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self._button_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-        #GPIO.setup(self._LED_1, GPIO.OUT)
-        #self._recording_LED = GPIO.PWM(self._LED_1, 0.5)
+        GPIO.setup(config.LED_1, GPIO.OUT)
+        self._recording_LED = GPIO.PWM(config.LED_1, 0.5)
 
-        #GPIO.add_event_detect(self._button_A, GPIO.FALLING, callback=self.button_A_pressed, bouncetime=BOUNCE_TIME)
-        #GPIO.add_event_detect(self._button_B, GPIO.FALLING, callback=self.button_B_pressed, bouncetime=BOUNCE_TIME)
+        GPIO.add_event_detect(self._button_A, GPIO.FALLING, callback=self.button_A_pressed, bouncetime=BOUNCE_TIME)
+        GPIO.add_event_detect(self._button_B, GPIO.FALLING, callback=self.button_B_pressed, bouncetime=BOUNCE_TIME)
 
         # register function to cleanup at exit
         atexit.register(self.cleanup)
