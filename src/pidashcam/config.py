@@ -17,9 +17,6 @@ height = 1200
 # Define the GPIO pin used to trigger saving (BCM pins, not connector)
 button_A = 23
 
-# Ditto for the button that defines whether or not we are recording
-button_B = 24
-
 # Define the GPIO pin to which the "Recording" LED is connected
 recording_LED = 25
 

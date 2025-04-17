@@ -10,19 +10,20 @@ BOUNCE_TIME = 300
 import atexit
 import logging
 import signal
-import sys, threading, termios, tty
+import sys
+import termios
+from threading import Thread
 from time import sleep
-
-# Custom libraries
-import config
-from camerathread import Camera
-from gpspoller import GPSPoller
-from myqueue import MyQueue
+import tty
 
 # Specials
 from gpiozero import Button, LED
 
-
+# Custom libraries
+from camerathread import Camera
+import config
+from gpspoller import GPSPoller
+from myqueue import MyQueue
 
 class PiDashCam():
   """
@@ -37,7 +38,6 @@ class PiDashCam():
 
     # Inter-thread communication events
     self._flush_now = threading.Event()
-    self._recording = threading.Event()
     self._GPS_queue = MyQueue()
 
     # Internal event used to initiate a controlled shutdown
@@ -47,6 +47,7 @@ class PiDashCam():
     signal.signal(signal.SIGTERM, self.__sigcatch)
 
     # GPIO initialisation
+    self._button_A = Button(config.button_A)
     self._recording_LED = LED(config.recording_LED)
 
     # register function to cleanup at exit
