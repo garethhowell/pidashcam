@@ -15,9 +15,9 @@ from time import sleep
 
 # Custom libraries
 import config
-from .camerathread import Camera
-from .gpspoller import GPSPoller
-from .myqueue import MyQueue
+from camerathread import Camera
+from gpspoller import GPSPoller
+from myqueue import MyQueue
 
 # Specials
 from gpiozero import Button, LED
@@ -47,7 +47,7 @@ class PiDashCam():
         signal.signal(signal.SIGTERM, self.__sigcatch)
 
         # GPIO initialisation
-        self._recording_LED = LED(config.LED_1)
+        self._recording_LED = LED(config.recording_LED)
 
 
         # register function to cleanup at exit
@@ -66,9 +66,9 @@ class PiDashCam():
             return
 
         self.log.debug('Button A has been pressed')
-        t = threading.Timer(config.post-record, self.set_flush_buffer)
+        t = threading.Timer(config.post-record, self.__set_flush_buffer)
         t.start()
-        # Start flashing LED1 more frequently
+        # Start flashing recording_LED more frequently
         self._recording_LED.blink(1)
 
 
@@ -146,7 +146,7 @@ class PiDashCam():
         # create the GPS thread
         self._GPS_T = GPSPoller("gpsT", self._GPS_queue)
         # ditto the Camera thread
-        self._camera_T = Camera("cameraT", self._GPS_queue, self.__flush_buffer,
+        self._camera_T = Camera("cameraT", self._GPS_queue, self._flush_buffer,
             self._recording, self._recording_LED)
 
         self._recording.set()
@@ -160,10 +160,10 @@ class PiDashCam():
             # Only check for keyboard characters if a keyboard is connected!
             # This won't be the case if we are running under systemd
             if sys.stdin.isatty():
-                char = self.getch()
+                char = self.__getch()
                 if char == "s":
                     self._log.debug("save")
-                    t = threading.Timer(self._extra_time, self.__set_flush_buffer)
+                    t = threading.Timer(config.post_record, self.__set_flush_buffer)
                     t.start()
                 elif char == "q":
                     self._log.debug("Shutdown")

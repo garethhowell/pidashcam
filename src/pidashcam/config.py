@@ -21,10 +21,10 @@ button_A = 23
 button_B = 24
 
 # Define the GPIO pin to which the "Recording" LED is connected
-LED_1 = 25
+recording_LED = 25
 
 # Where do we save the video files
-dest_dir = '/tmp'
+dest_dir = '/home/garethhowell/Videos'
 
 # What format do we save in
 video_format = 'h264'

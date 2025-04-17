@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from gpiozero import Button, LED
 from libcamera import Transform
 import logging
 import os
@@ -11,7 +12,7 @@ import time
 
 import config
 
-from .myqueue import MyQueue
+from myqueue import MyQueue
 
 SPEED_CONV = 2.23694 # convert m/s to mph
 
@@ -79,14 +80,14 @@ class Camera(threading.Thread):
       return frame
 
     # Live preview with annotation (optional, needs display)
-    def __start_annotated_preview():
+    def __start_annotated_preview(self):
       self._camera.start_preview(Preview.NULL)  # Can also use Preview.NULL if headless
 
       def preview_loop():
           while True:
               frame = self._camera.capture_array()
-              annotation = __update_annotation()
-              frame = __annotate_frame(frame, annotation)
+              annotation = self.__update_annotation()
+              frame = self.__annotate_frame(frame, annotation)
               # You can display it or just annotate it for recording
               cv2.imshow("Preview", frame)
               if cv2.waitKey(1) == ord('q'):
@@ -104,12 +105,12 @@ class Camera(threading.Thread):
         # Main Loop
         while not self._shutdown.isSet():
             while self._recording.isSet():
-                self._recording_LED.start(50)
+                self._recording_LED.blink(.5)
                 self.log.debug('Recording to ' + str(config.buffer_size) + ' seconds buffer')
-                __start_annotated_preview()
+                self.__start_annotated_preview()
 
                 while self._recording.isSet():
-                    self._camera.wait_recording(0.2)
+                    #self._camera.wait_recording(0.2)
                     # Check if we need to save the video
                     if self._flush_buffer.isSet():
                         i = datetime.now()
@@ -124,7 +125,7 @@ class Camera(threading.Thread):
                         self._output.stop()
                         self.log.debug('Switching back to recording to buffer..')
                         self._flush_buffer.clear()
-                        self._recording_LED.ChangeFrequency(0.5)
+                        #self._recording_LED.ChangeFrequency(0.5)
 
                     # Pause recording if necessary
                     if not self._recording.isSet():
