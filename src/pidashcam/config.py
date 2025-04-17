@@ -8,7 +8,7 @@ pre_record = 30
 
 # How long after the point at which we choose to save
 # do we need to keep saving (seconds)
-post_record = 30
+post_record = 10
 
 # define the size of the video
 width = 1440
@@ -37,5 +37,3 @@ log_level = 'debug'
 vflip = False
 hflip = False
 
-# Computed - DO NOT CHANGE
-buffer_size = pre_record + post_record

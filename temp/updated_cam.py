@@ -17,7 +17,6 @@ picam2.configure(video_config)
 # Create circular output (buffered stream)
 circular_output = CircularOutput(buffersize=BUFFER_DURATION)
 encoder = H264Encoder(bitrate=1000000)
-picam2.start_recording(encoder, circular_output)
 
 # Function to overlay annotations using OpenCV
 def annotate_frame(frame):
@@ -43,7 +42,7 @@ def start_annotated_preview():
     threading.Thread(target=preview_loop, daemon=True).start()
 
 # Start the annotated preview in a background thread
-#start_annotated_preview()
+start_annotated_preview()
 
 print("Recording... Press Ctrl+C to stop or trigger save logic.")
 

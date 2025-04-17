@@ -66,35 +66,37 @@ class PiDashCam():
             return
 
         self.log.debug('Button A has been pressed')
-        t = threading.Timer(config.post-record, self.__set_flush_buffer)
-        t.start()
-        # Start flashing recording_LED more frequently
-        self._recording_LED.blink(1)
+        # Ignore if we are already saving
+        if not self._flush_buffer.is_set():
+            t = threading.Timer(config.post-record, self.__set_flush_buffer)
+            t.start()
+            # Start flashing recording_LED more frequently
+            self._recording_LED.blink(1)
 
 
-    def __button_B_pressed(self, channel):
-        """
-        Button B interrupt service routine
-        Pause/resume recording
-        """
-
-        # This test is here because the user *might* have another HAT plugged in or another circuit that produces a
-        # falling-edge signal on another GPIO pin.
-
-        if channel != config.button_B:
-            return
-
-        self._log.debug('Button B has been pressed')
-        if self._recording.is_set():
-            self._flush_buffer.set()
-            sleep (1)
-            self._recording.clear()
-            self._recording_LED.off()
-            self._log.debug('Recording suspended')
-        else:
-            self._recording.set()
-            self._log.debug('Recording resumed')
-            self._recording_LED.blink(0.5)
+    #def __button_B_pressed(self, channel):
+    #    """
+    #    Button B interrupt service routine
+    #    Pause/resume recording
+    #    """
+    #
+    #    # This test is here because the user *might* have another HAT plugged in or another circuit that produces a
+    #    # falling-edge signal on another GPIO pin.
+    #
+    #    if channel != config.button_B:
+    #        return
+    #
+    #    self._log.debug('Button B has been pressed')
+    #    if self._recording.is_set():
+    #        self._flush_buffer.set()
+    #        sleep (1)
+    #        self._recording.clear()
+    #        self._recording_LED.off()
+    #        self._log.debug('Recording suspended')
+    #    else:
+    #        self._recording.set()
+    #        self._log.debug('Recording resumed')
+    #        self._recording_LED.blink(0.5)
 
     def __sigcatch(self, signum, frame):
         """

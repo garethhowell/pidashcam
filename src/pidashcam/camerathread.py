@@ -4,7 +4,7 @@ from libcamera import Transform
 import logging
 import os
 from picamera2 import Picamera2, Preview
-from picamera2.encoders import H264Encoder
+from picamera2.encoders import H264Encoder, MJPEGEncoder
 from picamera2.outputs import CircularOutput
 import queue
 import threading
@@ -47,13 +47,19 @@ class Camera(threading.Thread):
         self._running = True
 
         self._camera = Picamera2()
+        lsize = (320, 240)
         video_config = self._camera.create_video_configuration(
-                      main={"size": (config.width, config.height)},
+                      main={"size": (config.width, config.height),
+                            "format": "RGB888"},
+                      lores={"size":lsize, "format": "YUV420"},
                       transform=Transform(hflip=config.hflip, vflip=config.vflip)
                       )
         self._camera.configure(video_config)
         self._encoder = H264Encoder()
-        self._output = CircularOutput()
+
+        # Calculate how many buffers we need at 30FPS
+        buffer_size = config.pre_record * 30
+        self._encoder.output = CircularOutput(buffersize = buffer_size)
 
     def __update_annotation():
       # Update the annotation text
@@ -81,7 +87,7 @@ class Camera(threading.Thread):
 
     # Live preview with annotation (optional, needs display)
     def __start_annotated_preview(self):
-      self._camera.start_preview(Preview.NULL)  # Can also use Preview.NULL if headless
+      self._camera.start_preview(Preview.QT)  # Can also use Preview.NULL if headless
 
       def preview_loop():
           while True:
@@ -93,6 +99,7 @@ class Camera(threading.Thread):
               if cv2.waitKey(1) == ord('q'):
                   break
 
+      # Run the preview in a separate thread
       threading.Thread(target=preview_loop, daemon=True).start()
 
     def run(self):
@@ -106,23 +113,35 @@ class Camera(threading.Thread):
         while not self._shutdown.isSet():
             while self._recording.isSet():
                 self._recording_LED.blink(.5)
-                self.log.debug('Recording to ' + str(config.buffer_size) + ' seconds buffer')
+                self.log.debug('Recording to ' + str(config.pre_record) + ' seconds buffer')
                 self.__start_annotated_preview()
+                self._camera.start()
+                self._camera.start_encoder(self._encoder)
+
 
                 while self._recording.isSet():
-                    #self._camera.wait_recording(0.2)
                     # Check if we need to save the video
                     if self._flush_buffer.isSet():
-                        i = datetime.now()
-                        f = i.strftime('%Y%m%d-%H%M%S.' + config.video_format)
-                        out_file = str(config.dest_dir) + '/' + f
-                        self.log.debug('Flushing buffer to ' + out_file)
-                        self._output.fileout = out_file
-                        self._output.start()
+                        # Flush the contents of the buffer to disk
+                        # Construct the desired filename
+                        epoch = int(time.time())
+                        #f = i.strftime('%Y%m%d-%H%M%S.' + config.video_format)
+                        out_file = str(config.dest_dir) + '/' + f"{epoch}." + config.video_format
 
-                        # wait for  while
+                        #self._output.fileoutput = out_file
+
+                        # Start to flush
+                        self.log.debug('Flushing buffer to ' + out_file)
+                        self._encoder.output.fileoutput = out_file
+                        self._encoder.output.start()
+                        self._camera.start_encoder(self._encoder)
+
+                        # Wait for the desired amount of post_record time
+                        time.sleep(config.post_record)
+
                         # Stop saving video
-                        self._output.stop()
+                        self._encoder.output.stop()
+                        self._encoder.output.fileoutput = None
                         self.log.debug('Switching back to recording to buffer..')
                         self._flush_buffer.clear()
                         #self._recording_LED.ChangeFrequency(0.5)

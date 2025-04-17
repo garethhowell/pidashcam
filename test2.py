@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from picamera2 import Picamera2
+from picamera2 import Picamera2, Preview
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import CircularOutput
 
@@ -12,7 +12,7 @@ picam2 = Picamera2()
 video_config = picam2.create_video_configuration(main={"size": (1280, 720), "format": "RGB888"}, lores={
                                                  "size": lsize, "format": "YUV420"})
 picam2.configure(video_config)
-picam2.start_preview()
+picam2.start_preview(Preview.QT)
 encoder = H264Encoder(1000000, repeat=True)
 encoder.output = CircularOutput()
 picam2.start()
