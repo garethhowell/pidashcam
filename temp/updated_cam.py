@@ -11,7 +11,9 @@ ANNOTATE_TEXT = True
 
 # Setup Picamera2
 picam2 = Picamera2()
-video_config = picam2.create_video_configuration(main={"size": (1280, 720)})
+video_config = picam2.create_video_configuration(main={"size": (1280, 720)},
+                  lores={"size": (320, 240)}
+                  )
 picam2.configure(video_config)
 
 # Create circular output (buffered stream)
@@ -28,7 +30,7 @@ def annotate_frame(frame):
 
 # Live preview with annotation (optional, needs display)
 def start_annotated_preview():
-    picam2.start_preview(Preview.QTGL)  # Can also use Preview.NULL if headless
+    picam2.start_preview(Preview.QT)  # Can also use Preview.NULL if headless
 
     def preview_loop():
         while True:
@@ -53,9 +55,11 @@ try:
 except KeyboardInterrupt:
     # Save last N seconds to file
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    filename = f"/home/pi/video_clip_{timestamp}.h264"
-    circular_output.copy_to(filename)
+    filename = f"/home/garethhowell/VIDEOS/video_clip_{timestamp}.h264"
+    circular_output.fileoutput = filename
+    circular_output.start()
+    time.sleep(10)
+    circular_output.stop()
     print(f"Saved circular buffer to {filename}")
 
-    picam2.stop_recording()
     cv2.destroyAllWindows()

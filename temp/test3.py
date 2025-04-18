@@ -2,20 +2,40 @@ import cv2
 import numpy as np
 import time
 
-from picamera2 import Picamera2
+from picamera2 import MappedArray, Picamera2, Preview
+from picamera2.encoders import H264Encoder
+from picamera2.outputs import FileOutput
 
 picam2 = Picamera2()
-picam2.start(show_preview=True)
+video_config = picam2.create_video_configuration(main={"size": (640, 480), "format": "RGB888"}, lores={
+                                                 "size": (320, 240), "format": "YUV420"})
+picam2.configure(video_config)
 
-for time_left in range(10, 0, -1):
-    colour = (0, 255, 0, 255)
-    origin = (-1, 30)
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    scale = 1
-    thickness = 2
-    overlay = np.zeros((640, 480, 4), dtype=np.uint8)
-    cv2.putText(overlay, str(time_left), origin, font, scale, colour, thickness)
-    picam2.set_overlay(overlay)
-    time.sleep(1)
+timestamp = time.strftime("%Y%m%d-%H%M%S")
+filename = f"/home/garethhowell/Videos/video_clip_{timestamp}.h264"
 
-picam2.stop()
+colour = (0, 255, 0, 255)
+origin = (-1, 30)
+font = cv2.FONT_HERSHEY_SIMPLEX
+scale = 1
+thickness = 2
+
+def apply_timestamp(request):
+  with MappedArray(request, "main") as m:
+    cv2.putText(m.array, annotation, origin, font, scale, colour, thickness)
+
+annotation = "No Fix"
+picam2.pre_callback = apply_timestamp
+
+encoder = H264Encoder(bitrate=1000000)
+output = FileOutput(filename)
+
+
+picam2.start_preview(Preview.QT)
+picam2.start_recording(encoder, output)
+
+for n in range(6):
+  annotation = str(n)
+  time.sleep(1)
+
+picam2.stop_recording()
