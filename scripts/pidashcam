@@ -1,0 +1,46 @@
+#! /usr/bin/python -u
+
+import pidashcam
+import threading
+import logging
+import argparse
+import os
+import rpI2C as i2c
+
+
+# parse the command-line
+parser = argparse.ArgumentParser()
+parser.add_argument('-pre', '--prerecord', help='Pre-recording time (secs)', default='30')
+parser.add_argument('-post', '--postrecord', help='Post-recording time (secs)', default='30')
+parser.add_argument('-res', '--resolution', help='video resolution (hxv) in pixels', default='1440x1280')
+parser.add_argument('-ba', '--button_a', help='Button A GPIO Pin', default='23')
+parser.add_argument('-bb', '--button_b', help='Button B GPIO Pin', default='24')
+parser.add_argument('-led', '--led', help='LED GPIO Pin', default='16')
+parser.add_argument('-d', '--destdir', help='Destination directory for videos',  default='/home/pi/Videos')
+parser.add_argument('-v', '--video_format', help="format of video, 'h264' or 'mjpeg'", default='h264', choices=['h264', 'mjpeg'])
+parser.add_argument('-l', '--log-level', help="Log level, 'info' or 'debug'", default='info', choices=['info', 'debug'])
+parser.add_argument('--vflip', help='Flip video vertically', action="store_true")
+parser.add_argument('--hflip', help='Flip video horizontally', action="store_true")
+args = parser.parse_args()
+
+# Initialise logging
+logging.basicConfig(level = {'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
+log = logging.getLogger("pidashcam")
+log.setLevel({'info':logging.INFO, 'debug':logging.DEBUG}[args.log_level])
+log.info("piDashCam started")
+log.debug(args)
+destDir = args.destdir
+videoFormat = args.video_format
+buttonA = int(args.button_a)
+buttonB = int(args.button_b)
+led1 = int(args.led)
+cameraRes = {'h': 1440,'v': 1280}
+buffSize = int(args.prerecord)
+extraTime = int(args.postrecord)
+vflip = args.vflip
+hflip = args.hflip
+
+dashcam = pidashcam.PiDashCam(destDir, buttonA, buttonB, led1, videoFormat,
+    cameraRes, buffSize, extraTime, vflip, hflip)
+log.debug("dashcam = " + str(dashcam))
+dashcam.run()

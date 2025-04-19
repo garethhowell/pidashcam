@@ -1,7 +1,7 @@
 
-import threading
-import logging
+import threading, logging
 from gps import *
+from .myqueue import MyQueue
 
 ## GPSPoller Thread
 
@@ -13,27 +13,27 @@ class GPSPoller(threading.Thread):
     to update the current GPS information
     """
 
-    def __init__(self, name, gps_queue):
+    def __init__(self, name, gpsQueue):
         super(GPSPoller, self).__init__()
-        self._name = name
-        self._log = logging.getLogger(__name__)
-        self._log.debug("GPSPoller.__init__()")
+        self.name = name
+        self.log = logging.getLogger(__name__)
+        self.log.debug("GPSPoller.__init__()")
         #start updating the GPS info
-        self._gpsd = gps(mode=WATCH_ENABLE)
-        self._gps_queue = gps_queue
+        self.gpsd = gps(mode=WATCH_ENABLE)
+        self.gpsQueue = gpsQueue
         #current_value = None
-        self._running = True #setting the thread running to true
+        self.running = True #setting the thread running to true
 
-        self._shutdown = threading.Event()
+        self.shutdown = threading.Event()
 
     def run(self):
-        self._log.debug("GPSPoller.run()")
-        while not self._shutdown.isSet():
+        self.log.debug("GPSPoller.run()")
+        while not self.shutdown.isSet():
             #Continue to loop and grab EACH set of gpsd info
-            self._gpsd.next()
-            self._gps_queue.put(self._gpsd.fix)
-        self._log.debug("Ending GPSPoller thread")
+            self.gpsd.next()
+            self.gpsQueue.put(self.gpsd.fix)
+        self.log.debug("Ending GPSPoller thread")
 
     def join(self, timeout=None):
-        self._shutdown.set()
+        self.shutdown.set()
         super(GPSPoller, self).join(timeout)
