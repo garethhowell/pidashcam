@@ -1,7 +1,7 @@
 
 import threading
 import logging
-from gps import *
+from gps import gps, WATCH_ENABLE
 
 ## GPSPoller Thread
 
@@ -29,9 +29,20 @@ class GPSPoller(threading.Thread):
     def run(self):
         self._log.debug("GPSPoller.run()")
         while not self._shutdown.isSet():
-            #Continue to loop and grab EACH set of gpsd info
+            #Continue to loop and grab EACH fix
             self._gpsd.next()
-            self._gps_queue.put(self._gpsd.fix)
+            # We only want to update the queue if we have a valid fix
+            if self._gpsd.fix.mode >= 2:
+                # If we have a queue, put the fix in it
+                if self._gps_queue is not None:
+                    # Empty the queue before putting the new fix in
+                    self._log.debug("GPSPoller.run() emptying queue")
+                    self._gps_queue.empty()
+                    self._log.debug("GPSPoller.run() putting fix in queue")
+                    self._gps_queue.put(self._gpsd.fix)
+              time.sleep(1)
+        # If we get here, the thread is shutting down
+        self._log.debug("GPSPoller.run() shutting down")
         self._log.debug("Ending GPSPoller thread")
 
     def join(self, timeout=None):

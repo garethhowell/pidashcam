@@ -1,11 +1,23 @@
 #! /usr/bin/python -u
 
-import os, threading, time, logging, picamera
 from datetime import datetime, timedelta
+import logging
+import queue
+import os
+import threading
+import time
 
-import Queue
+import cv2
+from gpiozero import Button, LED
+from libcamera import Transform
+import numpy as np
+from picamera2 import Picamera2, Preview
+from picamera2.encoders import H264Encoder, MJPEGEncoder
+from picamera2.outputs import CircularOutput
+
 from .myqueue import MyQueue
 
+FPS = 30 # How fast do we want to capture frames
 SPEED_CONV = 2.23694 # convert m/s to mph
 
 class Camera(threading.Thread):
@@ -55,7 +67,21 @@ class Camera(threading.Thread):
         self.log = logging.getLogger(__name__)
         self.log.debug("Camera.__init__()")
         self.running = True
-        self.camera = picamera.PiCamera()
+        self.camera = Picamera2()
+        video_config = self.camera.create_video_configuration(
+                  main={"size": (self.cameraRes['h'], self.cameraRes['v']),
+                        "format": "RGB888"},
+                  lores={"size":(320, 240), "format": "YUV420"},
+                  transform=Transform(hflip=self.hflip, vflip=self.vflip)
+                  )
+        self.camera.configure(video_config)
+        self.encoder = H264Encoder()
+
+        # Calculate how many buffers we need
+        buffer_size = self.buffSize * FPS
+        self.encoder.output = CircularOutput(buffersize = buffer_size)
+
+
 
     def run(self):
         """

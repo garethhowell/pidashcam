@@ -16,14 +16,14 @@ from threading import Thread
 from time import sleep
 import tty
 
-# Specials
+# Third-party libraries
 from gpiozero import Button, LED
 
 # Custom libraries
-from camerathread import Camera
-import config
-from gpspoller import GPSPoller
-from myqueue import MyQueue
+from pidashcam.camerathread import Camera
+from pidashcam.config import config
+from pidashcam.gpspoller import GPSPoller
+from pidashcam.myqueue import MyQueue
 
 class PiDashCam():
   """
